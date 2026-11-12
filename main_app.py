@@ -386,11 +386,12 @@ class MainApp(tk.Tk):
             })
 
             # Properly populate job_data keys required by OptionsScreen & SummaryScreen
-            self.job_data = {
+         self.job_data = {
                 'job_id': job_id,
                 'file_name': file_name,
                 'file_path': local_file_path,
-                'download_url': job_data.get('download_url', '')
+                'path': local_file_path,  # <-- Added fallback key
+                'download_url': ''
             }
 
             try:
