@@ -1,0 +1,31 @@
+# Core framework and server
+flask
+flask-socketio
+python-socketio
+python-engineio
+flask-cors
+gunicorn
+eventlet
+
+# Firebase
+firebase-admin
+
+# File processing
+python-docx
+docx2pdf
+PyMuPDF
+PyPDF2
+qrcode
+pillow
+
+# User authentication & forms
+flask-bcrypt
+flask-wtf
+wtforms
+
+# Networking & utilities
+requests
+websocket-client
+pygetwindow
+pyserial
+pytz

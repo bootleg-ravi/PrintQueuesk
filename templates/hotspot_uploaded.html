@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="/static/img/tab-icon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Print Job Submitted - PrintQueuesk</title>
+    <link rel="stylesheet" href="/static/css/hotspot_uploaded.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="/static/img/logo.png" alt="PrintQueuesk Logo" class="logo">
+        </header>
+        <img src="/static/img/check.png" alt="Success" class="checklogo">
+        <h1>Print Job Submitted</h1>
+        
+        <div class="file-info">
+            <p>File: <strong id="filename"></strong></p>
+        </div>
+        
+        <p class="message">
+            Your document is ready for printing. Please wait for the file to appear on screen.
+        </p>
+        
+        <a href="/" class="back-link">Upload Another File</a>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const filename = urlParams.get('filename');
+            if (filename) {
+                document.getElementById('filename').textContent = decodeURIComponent(filename);
+            }
+        });
+    </script>
+</body>
+</html>

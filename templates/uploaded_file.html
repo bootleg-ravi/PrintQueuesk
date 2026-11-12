@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/tab-icon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Print Job Submitted - PrintQueuesk</title>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/uploaded_file.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="PrintQueuesk Logo" class="logo">
+        </header>
+        <img src="{{ url_for('static', filename='img/check.png') }}" alt="Success" class="checklogo">
+        <h1>Print Job Submitted</h1>
+        
+        <div class="file-info">
+            <p>File: <strong>{{ filename }}</strong></p>
+        </div>
+        
+        <p class="message">
+            Your document is ready for printing. Please wait for the file to appear on screen.
+        </p>
+        
+        <a href="/upload" class="back-link">Upload Another File</a>
+    </div>
+</body>
+</html>

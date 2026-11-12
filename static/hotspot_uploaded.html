@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Successful - PrintQueuesk</title>
+    <link rel="icon" href="img/tab-icon.ico">
+    <link rel="stylesheet" href="css/hotspot_uploaded.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="img/logo.png" alt="PrintQueuesk Logo" class="logo">
+        </header>
+        
+        <img src="img/check.png" alt="Success Checkmark" class="checklogo">
+        
+        <h1>File Uploaded Successfully!</h1>
+        
+        <div class="message">
+            Your document has been sent to the printing machine. Please wait for the machine to process it and insert your payment.
+        </div>
+        
+        <div class="file-info">
+            <p><strong>File Name:</strong> <span id="display-filename">Loading...</span></p>
+        </div>
+        
+        <a href="index.html" class="back-link">Upload Another File</a>
+    </div>
+
+    <script>
+        // Extract the filename from the URL string and display it dynamically
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const filename = urlParams.get('filename');
+            if (filename) {
+                document.getElementById('display-filename').textContent = filename;
+            } else {
+                document.getElementById('display-filename').textContent = "Document uploaded";
+            }
+        });
+    </script>
+</body>
+</html>

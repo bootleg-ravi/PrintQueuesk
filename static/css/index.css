@@ -1,0 +1,672 @@
+/* Base styles */
+html, body {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to bottom, #850216 0%, #e78896 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden; /* Remove auto scrolling */
+}
+
+/* Container styles */
+.container {
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2),
+                0 15px 40px rgba(0, 0, 0, 0.1),
+                0 20px 50px rgba(0, 0, 0, 0.08);
+    transform: translateZ(0);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 30px;
+    margin: 20px;
+}
+
+/* Header styles */
+header {
+    margin-bottom: 20px;
+}
+
+.logo {
+    /* Prefer 440px when available, but never overflow small screens */
+    width: min(440px, 90vw); /* will be 440px on large screens, up to 90% viewport width on small devices */
+    max-width: 100%;
+    height: auto; /* preserve aspect ratio */
+    display: block;
+    margin: 0 auto; /* center in header */
+}
+
+/* Typography */
+h1 {
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+/* Form styles */
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+
+label {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+input[type="file"] {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fafafa;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Drop zone styles */
+#drop-zone {
+    position: relative;
+    border: 2px dashed #b2b2b2;
+    border-radius: 12px;
+    background: #fafbfc;
+    padding: 28px 20px;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    margin-bottom: 14px;
+}
+
+#drop-zone.highlight {
+    border-color: #007bff;
+    background: #f0f7ff;
+}
+
+#drop-zone .drop-zone-text {
+    font-size: 16px;
+    color: #444;
+    margin-bottom: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+#drop-zone .drop-zone-subtext {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 20px;
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.4;
+}
+
+/* File input button */
+.file-label {
+    display: inline-block;
+    background: #f0f4fa;
+    color: #007bff;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-size: 15px;
+    cursor: pointer;
+    border: 1px solid #cdd8e5;
+    font-weight: 500;
+}
+/* Progress container */
+#progress-container {
+    display: none;
+    width: 100%;
+    max-width: 540px;
+    margin: 20px auto;
+    padding: 0 0px;
+    box-sizing: border-box;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center; /* Changed from flex-start to center */
+    gap: 12px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 12px;
+    border: 2px dashed #b2b2b2;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#file-thumb {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    margin-top: 0; /* Removed margin-top to center properly */
+}
+
+#file-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+#file-thumb-icon {
+    width: 20px;
+    height: 20px;
+    fill: #666;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0; /* This is crucial for text-overflow to work with flexbox */
+}
+
+#file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    display: block;
+    padding: 4px;
+}
+
+#file-size {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+    margin-bottom: 8px;
+}
+
+.progress-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.progress-bar-container {
+    flex: 1;
+    min-width: 320px; /* Ensure minimum width */
+    background: #e6eaf1;
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+}
+
+#progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #246bfd;
+    transition: width 0.2s;
+}
+
+.progress-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: 4px;
+    flex-shrink: 0; /* Prevent shrinking */
+    margin-top: 0; /* Ensure no top margin */
+}
+
+#progress-label {
+    font-size: 13px;
+    color: #246bfd;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#remove-file-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+#remove-file-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #d32f2f;
+    transition: fill 0.2s;
+}
+
+#remove-file-btn:hover svg {
+    fill: #b71c1c;
+}
+
+/* Guide section */
+.guide-section {
+    width: 100%;
+    min-width: 496px; /* Match form container width */
+    margin: 0 0 18px 0; /* Remove auto margins to align with drop zone */
+    padding: 0 12px; /* Match form padding */
+    box-sizing: border-box;
+}
+
+details {
+    width: 100%;
+    min-width: 100%;
+    box-sizing: border-box;
+}
+
+details summary {
+    font-size: 15px;
+    color: #333;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 0;
+    text-align: center;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.guide-content {
+    margin: 7px auto 0;
+    font-size: 14px;
+    color: #666;
+    text-align: left;
+    background: #f9f9f9;
+    border-radius: 8px;
+    line-height: 1.6;
+    width: 100%;
+    min-width: 496px; /* Match form container width */
+    box-sizing: border-box;
+}
+
+/* Buttons container */
+.buttons-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Animations */
+@keyframes rotateDown {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(90deg); }
+}
+
+@keyframes rotateUp {
+    from { transform: rotate(90deg); }
+    to { transform: rotate(0deg); }
+}
+
+@keyframes slideDown {
+    from { 
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+details[open] .arrow {
+    display: inline-block;
+    animation: rotateDown 0.2s ease-in-out forwards;
+}
+
+details:not([open]) .arrow {
+    display: inline-block;
+    animation: rotateUp 0.2s ease-in-out forwards;
+}
+
+details[open] .guide-content {
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+/* Hide file input */
+#file {
+    display: none;
+}
+
+/* Submit button specific styles */
+button[type="submit"] {
+    margin-top: 14px;
+    background: #111;
+    color: #fff;
+}
+
+.file-types-info {
+    color: #666;
+    font-size: 14px;
+    margin: 0 auto 12px;  /* Updated this line */
+    text-align: center;
+    max-width: 520px;
+    width: 100%;
+}
+
+/* Error message styles */
+.error-message {
+    background-color: #fee;
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px auto;
+    max-width: 480px;
+    width: calc(100% - 40px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #dc3545;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.15);
+    animation: slideDown 0.3s ease-out;
+    box-sizing: border-box;
+}
+
+.error-message .error-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #dc3545;
+}
+
+.error-message #error-text {
+    flex: 1;
+    text-align: left;
+    line-height: 1.3;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive error message for tablets */
+@media (max-width: 768px) {
+    .error-message {
+        max-width: 450px;
+        width: calc(100% - 32px);
+    }
+}
+
+/* Responsive error message for mobile */
+@media (max-width: 600px) {
+    .error-message {
+        font-size: 12px;
+        padding: 8px 12px;
+        margin: 8px auto;
+        max-width: 420px;
+        width: calc(100% - 24px);
+        gap: 6px;
+    }
+    
+    .error-message .error-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 400px) {
+    .error-message {
+        font-size: 11px;
+        padding: 6px 10px;
+        max-width: 360px;
+        width: calc(100% - 16px);
+        gap: 5px;
+    }
+    
+    .error-message .error-icon {
+        
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 350px) {
+    .error-message {
+        font-size: 10px;
+        padding: 5px 8px;
+        max-width: 320px;
+        width: calc(100% - 12px);
+        gap: 4px;
+    }
+    
+    .error-message .error-icon {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Responsive adjustments for progress container */
+@media (max-width: 480px) {
+    /* Only apply mobile styles to very small screens */
+    .progress-wrapper {
+        flex-direction: row; /* Keep horizontal layout */
+        gap: 6px; /* Further reduce gap */
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        align-items: center; /* Ensure proper alignment */
+    }
+    
+    .progress-bar-container {
+        flex: 1;
+        min-width: 150px; /* Further reduce minimum width */
+        max-width: none;
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    
+    .progress-controls {
+        flex-shrink: 0;
+        gap: 4px; /* Further reduce gap */
+        margin-left: 4px;
+    }
+    
+    #progress-label {
+        font-size: 11px; /* Further reduce font size */
+        min-width: 30px; /* Further reduce minimum width */
+    }
+    
+    #remove-file-btn svg {
+        width: 14px; /* Further reduce icon size */
+        height: 14px;
+    }
+    
+    /* Adjust file thumbnail for very small screens */
+    #file-thumb {
+        width: 36px; /* Slightly smaller thumbnail */
+        height: 36px;
+    }
+    
+    #file-thumb-icon {
+        width: 18px; /* Slightly smaller icon */
+        height: 18px;
+    }
+    
+    .file-details {
+        gap: 3px; /* Further reduce gap */
+        padding-right: 4px; /* Further reduce padding */
+    }
+    
+    #file-name {
+        font-size: 11px; /* Further reduce font size */
+    }
+    
+    #file-size {
+        font-size: 9px; /* Further reduce font size */
+    }
+    
+    .guide-section {
+        padding: 0 8px;
+        min-width: auto; /* Override min-width only on very small screens */
+        max-width: 100%; /* Allow full width on very small screens */
+    }
+    
+    details summary {
+        font-size: 13px;
+    }
+    
+    .guide-content {
+        min-width: auto; /* Override min-width only on very small screens */
+        max-width: 100%; /* Full width on very small screens */
+    }
+}
+
+/* Additional breakpoint specifically for very small screens (430px and below) */
+@media (max-width: 430px) {
+    .progress-wrapper {
+        gap: 8px; /* Increase gap for better spacing */
+    }
+    
+    .progress-bar-container {
+        min-width: 180px; /* Increase minimum width to fill space */
+    }
+    
+    .progress-controls {
+        gap: 6px; /* Increase gap */
+        margin-left: 6px; /* Increase margin */
+    }
+    
+    #progress-label {
+        font-size: 12px; /* Increase font size */
+        min-width: 35px; /* Increase minimum width */
+    }
+    
+    #remove-file-btn svg {
+        width: 16px; /* Increase icon size */
+        height: 16px;
+    }
+    
+    .file-details {
+        gap: 4px; /* Increase gap */
+        padding-right: 6px; /* Increase padding */
+    }
+    
+    #file-name {
+        font-size: 12px; /* Increase font size */
+    }
+    
+    #file-size {
+        font-size: 10px; /* Increase font size */
+    }
+}
+
+/* Additional breakpoint for very narrow screens (344px and below) */
+@media (max-width: 344px) {
+    .progress-wrapper {
+        gap: 4px; /* Slightly increase gap */
+    }
+    
+    .progress-bar-container {
+        min-width: 130px; /* Slightly increase minimum width */
+    }
+    
+    .progress-controls {
+        gap: 3px; /* Slightly increase gap */
+        margin-left: 3px; /* Slightly increase margin */
+    }
+    
+    #progress-label {
+        font-size: 11px; /* Slightly increase font size */
+        min-width: 28px; /* Slightly increase minimum width */
+    }
+    
+    #remove-file-btn svg {
+        width: 14px; /* Slightly increase icon size */
+        height: 14px;
+    }
+    
+    .file-details {
+        gap: 3px; /* Slightly increase gap */
+        padding-right: 3px; /* Slightly increase padding */
+    }
+    
+    #file-name {
+        font-size: 11px; /* Slightly increase font size */
+    }
+    
+    #file-size {
+        font-size: 9px; /* Slightly increase font size */
+    }
+    
+    /* Reduce progress item padding */
+    .progress-item {
+        padding: 10px; /* Slightly increase padding */
+        gap: 8px; /* Slightly increase gap */
+    }
+    
+    /* Reduce file thumbnail size */
+    #file-thumb {
+        width: 32px; /* Slightly increase thumbnail size */
+        height: 32px;
+    }
+    
+    #file-thumb-icon {
+        width: 16px; /* Slightly increase icon size */
+        height: 16px;
+    }
+}
