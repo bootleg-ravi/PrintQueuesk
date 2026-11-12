@@ -14,9 +14,7 @@ const firebaseConfig = {
   appId: "1:883624271026:web:2123e2f5a3b3f5a9113dab"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
 const database = getDatabase(app);
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -68,52 +66,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         uploadBtn.disabled = true;
-        uploadBtn.textContent = 'Uploading...';
+        uploadBtn.textContent = 'Processing...';
 
-        try {
-            // Create a unique file name to avoid collisions in Storage
-            const uniqueFileName = `${Date.now()}_${fileToUpload.name}`;
-            const fileStorageRef = storageRef(storage, `print_files/${uniqueFileName}`);
-            
-            // Start resumable upload to Firebase Storage
-            const uploadTask = uploadBytesResumable(fileStorageRef, fileToUpload);
+        const reader = new FileReader();
+        
+        reader.onload = async function(event) {
+            try {
+                const base64Data = event.target.result; // The complete file data as a string
 
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    // Track upload progress
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    progressBar.style.width = progress + '%';
-                    progressLabel.textContent = Math.round(progress) + '%';
-                }, 
-                (error) => {
-                    console.error('Firebase Storage error:', error);
-                    throw new Error(error.message);
-                }, 
-                async () => {
-                    // Upload completed successfully, get the public download URL
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                progressBar.style.width = '100%';
+                progressLabel.textContent = '100%';
 
-                    // Push job record to Firebase Realtime Database so the Python desktop app picks it up
-                    const newJobRef = push(dbRef(database, 'jobs/print_jobs'));
-                    await set(newJobRef, {
-                        file_name: fileToUpload.name,
-                        file_path: uniqueFileName,
-                        download_url: downloadURL,
-                        status: 'pending',
-                        created_at: Date.now()
-                    });
+                // Push file payload directly to Realtime Database
+                const newJobRef = push(dbRef(database, 'jobs/print_jobs'));
+                await set(newJobRef, {
+                    file_name: fileToUpload.name,
+                    file_data: base64Data, // Storing file text payload directly here
+                    status: 'pending',
+                    created_at: Date.now()
+                });
 
-                    // Redirect to success confirmation page
-                    window.location.href = `hotspot_uploaded.html?filename=${encodeURIComponent(fileToUpload.name)}`;
-                }
-            );
+                // Redirect to success confirmation page
+                window.location.href = `hotspot_uploaded.html?filename=${encodeURIComponent(fileToUpload.name)}`;
+            } catch (error) {
+                console.error('Database write error:', error);
+                showError(`Upload failed: ${error.message}`);
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Submit';
+            }
+        };
 
-        } catch (error) {
-            console.error('Upload error:', error);
-            showError(`Upload failed: ${error.message}`);
+        reader.onerror = function(error) {
+            console.error('File read error:', error);
+            showError('Failed to read local file.');
             uploadBtn.disabled = false;
             uploadBtn.textContent = 'Submit';
-        }
+        };
+
+        // Read file as a data URL (Base64 string)
+        reader.readAsDataURL(fileToUpload);
     });
 
     function preventDefaults(e) {
@@ -179,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('file-name').textContent = file.name;
         document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
         progressContainer.style.display = 'block';
-        progressBar.style.width = '100%'; // Show as ready
+        progressBar.style.width = '100%';
         progressLabel.textContent = '100%';
     }
 });
