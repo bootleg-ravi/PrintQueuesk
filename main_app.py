@@ -386,7 +386,8 @@ class MainApp(tk.Tk):
             })
 
             # Properly populate job_data keys required by OptionsScreen & SummaryScreen
-         self.job_data = {
+	# Provide both 'file_path' and 'path' to prevent any key mismatch errors
+            self.job_data = {
                 'job_id': job_id,
                 'file_name': file_name,
                 'file_path': local_file_path,
