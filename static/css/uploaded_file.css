@@ -1,0 +1,258 @@
+/* Base styles */
+html, body {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #850216 0%, #e78896 100%);
+    margin: 0;
+    padding: 0; /* Remove body padding to fix centering */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden; /* Ensure no scrolling */
+}
+
+/* Container styles */
+.container {
+    width: 92%; /* Slightly increased from 90% */
+    max-width: 550px; /* Slightly increased from 520px */
+    background-color: white;
+    padding: 25px; /* Slightly increased from 22px */
+    border-radius: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2),
+                0 15px 40px rgba(0, 0, 0, 0.1),
+                0 20px 50px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    transform: translateZ(0);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeIn 0.5s ease-out;
+    box-sizing: border-box; /* Ensure padding is included in width */
+    margin: 10px; /* Add margin for spacing from edges */
+}
+
+/* Header styles */
+header {
+    margin-bottom: 12px; /* Slightly increased from 10px */
+}
+
+.logo {
+    /* Prefer 440px when available but fit smaller screens safely */
+    width: min(440px, 90vw); /* use up to 440px, else 90% of viewport width */
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto 12px; /* center and keep spacing below */
+}
+
+.checklogo {
+    max-width: 130px; /* Slightly increased from 120px */
+    height: auto;
+    margin: 12px 0 22px; /* Slightly increased margins */
+    width: 100%; /* Ensure responsive scaling */
+}
+
+/* Typography */
+h1 {
+    color: #FA2A55;
+    font-size: 26px; /* Slightly increased from 24px */
+    margin-bottom: 17px; /* Slightly increased from 15px */
+    word-wrap: break-word; /* Prevent text overflow */
+}
+
+.message {
+    margin: 22px 0; /* Slightly increased from 20px */
+    font-size: 15px; /* Slightly increased from 14px */
+    color: #555;
+    line-height: 1.5;
+    padding: 0 12px; /* Slightly increased from 10px */
+    word-wrap: break-word; /* Prevent text overflow */
+}
+
+/* File info styles */
+.file-info {
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    padding: 14px; /* Slightly increased from 12px */
+    margin: 17px 0; /* Slightly increased from 15px */
+    text-align: left;
+    font-size: 15px; /* Slightly increased from 14px */
+    word-wrap: break-word; /* Prevent text overflow */
+    overflow-wrap: break-word; /* Modern browsers */
+}
+
+.file-info p {
+    margin: 6px 0;
+    white-space: normal;
+    width: 100%;
+    display: block;
+    padding: 2px 0;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.file-info strong {
+    color: #333;
+}
+
+/* Button styles */
+.back-link {
+    display: inline-block;
+    background-color: #111;
+    color: white;
+    padding: 12px 28px; /* Slightly increased from 10px 25px */
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    margin-top: 10px; /* Slightly increased from 8px */
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 15px; /* Slightly increased from 14px */
+    white-space: nowrap; /* Prevent button text wrapping */
+}
+
+.back-link:hover {
+    background-color: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    body {
+        padding: 0; /* Keep body padding at 0 for perfect centering */
+    }
+    
+    .container {
+        width: 96%; /* Slightly increased from 95% */
+        padding: 20px; /* Slightly increased from 17px */
+        margin: 5px; /* Equal margin on all sides */
+    }
+    
+    /* logo sizing handled by clamp() above; no per-breakpoint override needed */
+    
+    .checklogo {
+        max-width: 110px; /* Slightly increased from 100px */
+    }
+    
+    h1 {
+        font-size: 22px; /* Slightly increased from 20px */
+        margin-bottom: 12px; /* Slightly increased from 10px */
+    }
+    
+    .message {
+        font-size: 14px; /* Slightly increased from 13px */
+        padding: 0 6px; /* Slightly increased from 5px */
+        margin: 17px 0; /* Slightly increased from 15px */
+    }
+    
+    .file-info {
+        padding: 12px; /* Slightly increased from 10px */
+        margin: 12px 0; /* Slightly increased from 10px */
+        font-size: 14px; /* Slightly increased from 13px */
+    }
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+    body {
+        padding: 0; /* Keep body padding at 0 */
+    }
+    
+    .container {
+        width: 99%; /* Slightly increased from 98% */
+        padding: 16px; /* Slightly increased from 14px */
+        border-radius: 20px; /* Slightly smaller radius */
+        margin: 3px; /* Minimal equal margin */
+    }
+    
+    /* logo sizing handled by clamp() above; no per-breakpoint override needed */
+    
+    .checklogo {
+        max-width: 90px; /* Slightly increased from 80px */
+        margin: 10px 0 17px; /* Slightly increased margins */
+    }
+    
+    h1 {
+        font-size: 20px; /* Slightly increased from 18px */
+        margin-bottom: 10px; /* Slightly increased from 8px */
+    }
+    
+    .message {
+        font-size: 13px; /* Slightly increased from 12px */
+        padding: 0 4px; /* Slightly increased from 3px */
+        margin: 14px 0; /* Slightly increased from 12px */
+    }
+    
+    .file-info {
+        padding: 10px; /* Slightly increased from 8px */
+        margin: 10px 0; /* Slightly increased from 8px */
+        font-size: 13px; /* Slightly increased from 12px */
+    }
+    
+    .back-link {
+        padding: 10px 22px; /* Slightly increased from 8px 20px */
+        font-size: 14px; /* Slightly increased from 13px */
+        margin-top: 8px; /* Slightly increased from 6px */
+    }
+}
+
+/* For extremely small screens */
+@media (max-width: 360px) {
+    body {
+        padding: 0; /* Keep body padding at 0 */
+    }
+    
+    .container {
+        width: 99.5%; /* Slightly increased from 99% */
+        padding: 14px; /* Slightly increased from 12px */
+        margin: 2px; /* Very minimal equal margin */
+    }
+    
+    /* logo sizing handled by clamp() above; no per-breakpoint override needed */
+    
+    .checklogo {
+        max-width: 80px; /* Slightly increased from 70px */
+    }
+    
+    h1 {
+        font-size: 18px; /* Slightly increased from 16px */
+    }
+    
+    .message {
+        font-size: 12px; /* Slightly increased from 11px */
+    }
+    
+    .file-info {
+        font-size: 12px; /* Slightly increased from 11px */
+        padding: 8px; /* Slightly increased from 6px */
+    }
+    
+    .back-link {
+        padding: 8px 18px; /* Slightly increased from 6px 16px */
+        font-size: 13px; /* Slightly increased from 12px */
+    }
+}
