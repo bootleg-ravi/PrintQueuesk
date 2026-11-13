@@ -225,15 +225,24 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         """Handle GET requests, serving the upload portal or success page."""
-            # Normalize path
         if self.path == '/' or self.path == '':
-            self.path = '/templates/index.html'  # Adjust filename if your portal is named differently (e.g., upload.html)
-        
-        if self.path in ('/success', '/success.html'):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-        
+            
+            # Locate index.html safely from the project root
+            index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'templates', 'index.html')
+            try:
+                with open(index_path, 'rb') as f:
+                    self.wfile.write(f.read())
+            except Exception as e:
+                self.wfile.write(b"Error loading upload portal template.")
+                
+        elif self.path in ('/success', '/success.html'):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
             success_html = """
             <!DOCTYPE html>
             <html>
@@ -261,7 +270,7 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             """
             self.wfile.write(success_html.encode('utf-8'))
         else:
-            # Serve CSS, JS, and the main upload page normally
+            # Serve CSS, JS, and static assets normally from their correct paths
             super().do_GET()
 
     def send_error(self, code, message=None, explain=None):
