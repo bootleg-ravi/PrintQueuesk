@@ -1,4 +1,4 @@
-# main_app.py
+from config.hotspot_config import HotspotServer
 
 import tkinter as tk
 import threading
@@ -10,6 +10,7 @@ import sys
 from tkinter import messagebox
 
 # Import screen modules
+
 from screens.home_screen import HomeScreen
 from screens.hotspot_screen import HotspotScreen
 from screens.options_screen import OptionsScreen
@@ -66,11 +67,40 @@ class MainApp(tk.Tk):
         self.current_frame = "HomeScreen"
         self._on_qr_code_view = False  
         self._countdown_active = False  
-
         self.start_downloads_cleanup()
+
+        try:
+            self.hotspot_server = HotspotServer(port=8080, callback=self.handle_incoming_file)
+            self.hotspot_server.start()
+            print("[MainApp] Local hotspot upload server running on port 8080")
+        except Exception as e:
+            print(f"[MainApp] Failed to start hotspot server: {e}")
+
         self.show_frame("HomeScreen")
         self._reset_global_idle_timer()
 
+    def handle_incoming_file(self, file_path, job_data):
+        """Triggered instantly when a file is uploaded via the local mobile hotspot web page."""
+        print(f"[MainApp] File received from mobile: {file_path}")
+        self.job_data = job_data
+        
+        # Switch to the Options Screen on the main Tkinter UI thread
+        def _navigate():
+            options_screen = self.frames.get("OptionsScreen")
+            if options_screen and hasattr(options_screen, "load_data"):
+                options_screen.load_data(job_data)
+            self.show_frame("OptionsScreen")
+            
+        self.after(0, _navigate)
+        
+        # Switch to the Options Screen on the main Tkinter UI thread
+        def _navigate():
+            options_screen = self.frames.get("OptionsScreen")
+            if options_screen and hasattr(options_screen, "load_data"):
+                options_screen.load_data(job_data)
+            self.show_frame("OptionsScreen")
+            
+        self.after(0, _navigate)
     def show_frame(self, page_name, data=None):
         if self.idle_modal_visible:
             print(f"[MainApp] Idle modal visible - ignoring frame switch request to {page_name}")
