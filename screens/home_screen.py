@@ -1971,3 +1971,32 @@ def launch_hotspot_screen(self):
             # Optionally show an error message to the user
             from tkinter import messagebox
             messagebox.showerror("Error", f"Failed to navigate to hotspot screen: {str(e)}")
+
+def update_paper_count(self, short_count, a4_count):
+        """Update the remaining paper count display on home screen if widgets exist."""
+        try:
+            if hasattr(self, 'short_paper_label'):
+                self.short_paper_label.config(text=f"Letter: {short_count} sheets")
+            if hasattr(self, 'a4_paper_label'):
+                self.a4_paper_label.config(text=f"A4: {a4_count} sheets")
+        except Exception:
+            pass
+
+def fetch_paper_counts(self):
+        """Fetch paper inventory counts locally or fallback gracefully offline."""
+        try:
+            from config.firebase_config import db
+            printer_status_ref = db.reference('resources/paper/printer_status')
+            statuses = printer_status_ref.order_by_child('updated_at').limit_to_last(1).get()
+            
+            if statuses:
+                latest_status = list(statuses.values())[0]
+                letter_count = int(latest_status.get('remaining_paper_letter', 100))
+                a4_count = int(latest_status.get('remaining_paper_a4', 100))
+                self.update_paper_count(letter_count, a4_count)
+            else:
+                self.update_paper_count(100, 100)
+        except Exception as e:
+            # Offline fallback: use safe default counts without crashing
+            print(f"[Offline Mode] Using default paper counts (No internet connection)")
+            self.update_paper_count(100, 100)
