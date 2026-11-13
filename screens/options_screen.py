@@ -65,14 +65,8 @@ class OptionsScreen(tk.Frame):
         self.bind_all('<Motion>', lambda e: self.controller._reset_global_idle_timer())
 
     def load_data(self, data):
-        """Load job data and initialize the UI. Uses a lightweight overlay and defers heavy preview rendering."""
-        # Ensure any HomeScreen transition overlay is hidden when entering Options
-        try:
-            home_frame = self.controller.frames.get("HomeScreen")
-            if home_frame and hasattr(home_frame, 'hide_transition_screen'):
-                home_frame.hide_transition_screen()
-        except Exception:
-            pass
+        if data is None:
+            return
 
         self.file_name = data.get('file_name')
         self.file_path = data.get('file_path')
