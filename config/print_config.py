@@ -624,7 +624,7 @@ def print_file_for_job(job_id: str) -> Tuple[bool, str]:
                     color_mode=color_mode,
                     page_size=page_size,
                     page_range=page_range,
-                    scale_mode='actual',
+                    scale_mode='fit',
                     doc_name=dn
                 )
                 if not ok:
