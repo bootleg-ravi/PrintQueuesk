@@ -54,7 +54,7 @@ class MainApp(tk.Tk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         # Start Firebase Realtime Database listener for serverless web uploads
-        self.start_firebase_listener()
+        #self.start_firebase_listener()
 
         # Application state variables
         self.job_data = {}

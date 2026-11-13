@@ -1,22 +1,3 @@
-// Import Firebase SDK modules via CDN
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-import { getDatabase, ref as dbRef, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-// TODO: Replace these with your actual Firebase project configuration details
-const firebaseConfig = {
-  apiKey: "AIzaSyCofkkAfT8-NY8LVUNuuvPQzlvbnJ4p1nI",
-  authDomain: "printqueuesk-f2c93.firebaseapp.com",
-  databaseURL: "https://printqueuesk-f2c93-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "printqueuesk-f2c93",
-  storageBucket: "printqueuesk-f2c93.firebasestorage.app",
-  messagingSenderId: "883624271026",
-  appId: "1:883624271026:web:2123e2f5a3b3f5a9113dab"
-};
-
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
 document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('file');
     const progressContainer = document.getElementById('progress-container');
@@ -58,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadBtn.disabled = true;
     });
 
+    // --- NEW LOCAL OFFLINE UPLOAD LOGIC ---
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         if (!fileToUpload) {
@@ -68,43 +50,30 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadBtn.disabled = true;
         uploadBtn.textContent = 'Processing...';
 
-        const reader = new FileReader();
-        
-        reader.onload = async function(event) {
-            try {
-                const base64Data = event.target.result; // The complete file data as a string
+        const formData = new FormData();
+        // Important: we append the file with the name 'file' which the python server expects
+        formData.append('file', fileToUpload, fileToUpload.name);
 
+        try {
+            // Send file directly to local Python HTTP server on port 8080
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
                 progressBar.style.width = '100%';
                 progressLabel.textContent = '100%';
-
-                // Push file payload directly to Realtime Database
-                const newJobRef = push(dbRef(database, 'jobs/print_jobs'));
-                await set(newJobRef, {
-                    file_name: fileToUpload.name,
-                    file_data: base64Data, // Storing file text payload directly here
-                    status: 'pending',
-                    created_at: Date.now()
-                });
-
-                // Redirect to success confirmation page
                 window.location.href = `hotspot_uploaded.html?filename=${encodeURIComponent(fileToUpload.name)}`;
-            } catch (error) {
-                console.error('Database write error:', error);
-                showError(`Upload failed: ${error.message}`);
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Submit';
+            } else {
+                throw new Error('Local server rejected the file.');
             }
-        };
-
-        reader.onerror = function(error) {
-            console.error('File read error:', error);
-            showError('Failed to read local file.');
+        } catch (error) {
+            console.error('Upload error:', error);
+            showError(`Upload failed: Make sure you are connected to the Hotspot.`);
             uploadBtn.disabled = false;
             uploadBtn.textContent = 'Submit';
-        };
-
-        // Read file as a data URL (Base64 string)
-        reader.readAsDataURL(fileToUpload);
+        }
     });
 
     function preventDefaults(e) {

@@ -280,12 +280,28 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f.write(preline)
                             preline = line
                 
-                # Save to Firebase and get job data
-                job_data = save_file_to_firebase(filepath, filename)
-                
-                # Call callback with both filepath and job data
-                if self.callback:
-                    self.callback(filepath, job_data)
+# Generate local job data (bypassing Firebase completely)
+            import time
+            job_id = f"LOCAL-{int(time.time())}"
+            job_data = {
+                'job_id': job_id,
+                'file_name': filename,
+                'file_path': filepath,
+                'path': filepath,
+                'download_url': '',
+                'status': 'pending',
+                'details': [{
+                    'num_copies': 1,
+                    'page_range': 'all',
+                    'color_mode': 'colored',
+                    'page_size': 'Letter',
+                    'scale_mode': 'fit'
+                }]
+            }
+            
+            # Call callback to trigger the OptionsScreen instantly
+            if self.callback:
+                self.callback(filepath, job_data)
                 
                 # Send a JSON response indicating success
                 self.send_response(200)
@@ -391,8 +407,8 @@ class HotspotConfig:
     
     @classmethod
     def get_upload_directory(cls):
-        """Get the default upload directory path."""
-        return os.path.join(os.path.expanduser("~"), "Documents", "PrinTech_Received_Files")
+        """Save directly to the main app's downloads folder."""
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "downloads")
     
     @classmethod
     def generate_qr_code(cls, port=None, output_path=None):
