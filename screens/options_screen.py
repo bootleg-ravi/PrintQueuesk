@@ -943,7 +943,7 @@ def load_preview(self, page_num=1, on_done=None):
                 except OSError as e:
                     print(f"Error removing temp directory {temp_dir}: {e}")
 
-    def reset_idle_timer(self):
+def reset_idle_timer(self):
         # Cancel previous timer if exists
         if hasattr(self, '_idle_timer') and self._idle_timer:
             self.after_cancel(self._idle_timer)
