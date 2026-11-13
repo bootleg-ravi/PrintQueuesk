@@ -283,22 +283,12 @@ class HomeScreen(tk.Frame):
             pass
 
     def fetch_paper_counts(self):
-        """Fetch paper inventory counts locally or fallback gracefully offline."""
+        """Safely set default paper counts for offline mode without triggering Firebase errors."""
         try:
-            from config.firebase_config import db
-            printer_status_ref = db.reference('resources/paper/printer_status')
-            statuses = printer_status_ref.order_by_child('updated_at').limit_to_last(1).get()
-            
-            if statuses:
-                latest_status = list(statuses.values())[0]
-                letter_count = int(latest_status.get('remaining_paper_letter', 100))
-                a4_count = int(latest_status.get('remaining_paper_a4', 100))
-                self.update_paper_count(letter_count, a4_count)
-            else:
-                self.update_paper_count(100, 100)
+            # Use safe local defaults to ensure 100% offline stability
+            self.update_paper_count(100, 100)
         except Exception as e:
-            # Offline fallback: use safe default counts without crashing
-            print(f"[Offline Mode] Using default paper counts (No internet connection)")
+            print(f"[Offline Mode] Using default paper counts: {e}")
             self.update_paper_count(100, 100)
 
         # Right Card: Logo, Status and Button (rounded, compact size)
