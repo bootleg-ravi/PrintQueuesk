@@ -498,12 +498,26 @@ def print_pdf_via_gdi(file_path: str, printer_name: str, dpi: int = 150,
 
 def convert_docx_to_pdf(docx_path: str, output_pdf_path: str) -> Tuple[bool, str]:
     """Convert DOCX to PDF using LibreOffice Headless (no Word required)."""
+    import subprocess
+    import os
+    
     try:
         output_dir = os.path.dirname(output_pdf_path)
         
+        # Standard paths for LibreOffice on Windows
+        libreoffice_path = r"C:\Program Files\LibreOffice\program\soffice.exe"
+        
+        # Fallback for 32-bit installations
+        if not os.path.exists(libreoffice_path):
+            libreoffice_path = r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"
+            
+        # If neither exists, fallback to just the command name
+        if not os.path.exists(libreoffice_path):
+            libreoffice_path = "soffice"
+        
         # Run LibreOffice in headless mode
         result = subprocess.run(
-            ['soffice', '--headless', '--convert-to', 'pdf', '--outdir', output_dir, docx_path],
+            [libreoffice_path, '--headless', '--convert-to', 'pdf', '--outdir', output_dir, docx_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -524,7 +538,6 @@ def convert_docx_to_pdf(docx_path: str, output_pdf_path: str) -> Tuple[bool, str
         return True, "Converted successfully"
     except Exception as e:
         return False, str(e)
-
 
 def _wait_for_spool_completion(printer_name: str, doc_name: str, poll_interval: float = 1.0, timeout: float = 600.0) -> bool:
     try:
