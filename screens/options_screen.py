@@ -13,6 +13,7 @@ import time
 import threading
 from config.firebase_config import db
 from config.arduino_config import ArduinoCoinAcceptor
+from config.print_config import convert_docx_to_pdf
 
 # Store image references globally to prevent garbage collection
 image_refs = {}
@@ -719,7 +720,7 @@ class OptionsScreen(tk.Frame):
     # --- Mouse Wheel Scrolling for Options Pane ---
     
     # --- Preview Loading Logic ---
-    def load_preview(self, page_num=1, on_done=None):
+def load_preview(self, page_num=1, on_done=None):
         if not hasattr(self, 'file_path') or not self.file_path:
             if on_done: on_done()
             return
@@ -753,8 +754,12 @@ class OptionsScreen(tk.Frame):
                         os.path.basename(self.file_name).replace('.docx', '.pdf').replace('.doc', '.pdf')
                     )
                     try:
-                        convert(self.file_path, temp_pdf_path)
-                        # Persist the converted PDF for the lifetime of the job (don't delete in finally)
+                        # Use our new LibreOffice helper instead of docx2pdf
+                        ok, msg = convert_docx_to_pdf(self.file_path, temp_pdf_path)
+                        if not ok:
+                            raise Exception(msg)
+                            
+                        # Persist the converted PDF for the lifetime of the job
                         self._converted_pdf_path = temp_pdf_path
                         self._converted_from_docx = True
                         display_path = self._converted_pdf_path
@@ -767,12 +772,12 @@ class OptionsScreen(tk.Frame):
                         font_size = max(10, int(16 * self.scale_factor))
                         error_details = str(e)
                         if not error_details:
-                            error_details = "No details. Microsoft Word may not be installed, or the file may be corrupted."
+                            error_details = "No details. LibreOffice may not be installed."
                         self.preview_canvas.create_text(
                             canvas_w / 2, canvas_h / 2,
                             text=("Conversion Error\n" +
                                   "Failed to convert Word document to PDF.\n" +
-                                  "Please upload a PDF or install Microsoft Word.\n\n" +
+                                  "Please verify LibreOffice is installed.\n\n" +
                                   f"Details: {error_details}"),
                             fill="red",
                             font=("Arial", font_size),
