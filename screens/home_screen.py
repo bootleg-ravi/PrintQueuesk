@@ -1542,13 +1542,11 @@ def fetch_ink_levels(self):
         print(f"[Offline Mode] Skipping ink level fetch (No internet connection)")
 
     def fetch_paper_counts(self):
-        """Safely fetch or fallback paper counts without triggering offline Firebase auth errors."""
+        """Safely provide default paper counts for offline mode without network calls."""
         try:
-            # Check if we want to attempt a fast local check or skip when offline
-            # For 100% offline mode, we directly use safe defaults to avoid network lag/errors
             self.update_paper_count(100, 100)
         except Exception as e:
-            print(f"[Offline Mode] Using default paper counts: {e}")
+            print(f"[Offline Mode] Paper count fallback: {e}")
             self.update_paper_count(100, 100)
 
     def show_remaining_paper_modal(self, letter_count, a4_count):

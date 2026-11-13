@@ -187,10 +187,13 @@ class OptionsScreen(tk.Frame):
             self._loading_overlay = None
 
     def fetch_latest_prices(self):
-        prices_ref = db.reference('system/settings/print_prices')
-        prices = prices_ref.order_by_child('updated_at').limit_to_last(1).get()
-        latest = list(prices.values())[-1] if isinstance(prices, dict) else (prices[-1] if isinstance(prices, list) else None)
-        return (latest.get('black_price'), latest.get('color_price')) if latest else (None, None)
+        """Return default local prices (Colored: 10.00, B&W: 5.00) without querying Firebase offline."""
+        try:
+        # Safe local fallback prices for offline mode (matching your UI text)
+            return 5.00, 10.00  # (black_price, color_price)
+        except Exception as e:
+            print(f"[Offline Mode] Price fetch fallback: {e}")
+            return 5.00, 10.00
 
     def save_print_job_details(self, page_range, color_mode, total_price, page_size, scale_mode, scale_percentage, num_copies):
         # Use NEW HIERARCHICAL STRUCTURE
