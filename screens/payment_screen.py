@@ -690,7 +690,7 @@ class PaymentScreen(tk.Frame):
                     color_mode=getattr(self, 'color_mode', 'colored'),
                     page_size=getattr(self, 'page_size', 'Letter'),
                     page_range=getattr(self, 'page_range', 'all'),
-                    scale_mode='actual'
+                    scale_mode='fit'
                 )
                 if not ok:
                     return False, f"Failed on copy {copy_idx + 1}: {msg}"
