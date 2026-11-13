@@ -766,45 +766,11 @@ class HotspotScreen(tk.Frame):
             self.a4_paper_label.config(text=f"A4: {a4_count} sheets")
     
     def fetch_paper_counts(self):
-        """Fetch paper inventory counts from Firebase and update display."""
+        """Safely set default paper counts for offline hotspot mode."""
         try:
-            from config.firebase_config import db
-            
-            # Fetch from printer_status (same path as dashboard)
-            printer_status_ref = db.reference('resources/paper/printer_status')
-            statuses = printer_status_ref.order_by_child('updated_at').limit_to_last(1).get()
-            
-            print(f"[HotspotScreen] Printer status data: {statuses}")
-            
-            if statuses:
-                # Get the latest status entry
-                latest_status = list(statuses.values())[0]
-                
-                # Get Letter and A4 paper counts
-                letter_count = latest_status.get('remaining_paper_letter', 100)
-                a4_count = latest_status.get('remaining_paper_a4', 100)
-                
-                # Convert to integers
-                try:
-                    letter_count = int(letter_count) if letter_count is not None and letter_count != '' else 100
-                except (ValueError, TypeError):
-                    letter_count = 100
-                    
-                try:
-                    a4_count = int(a4_count) if a4_count is not None and a4_count != '' else 100
-                except (ValueError, TypeError):
-                    a4_count = 100
-                
-                print(f"[HotspotScreen] Letter: {letter_count}, A4: {a4_count}")
-                self.update_paper_count(letter_count, a4_count)
-            else:
-                print("[HotspotScreen] No printer_status data found, using defaults")
-                self.update_paper_count(100, 100)
-            
+            self.update_paper_count(100, 100)
         except Exception as e:
-            print(f"[HotspotScreen] Error fetching paper counts: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"[Offline Mode] Using default paper counts: {e}")
             self.update_paper_count(100, 100)
     
     def reset_idle_timer(self):
