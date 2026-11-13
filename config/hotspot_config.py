@@ -224,12 +224,16 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"Successfully uploaded {filename}")
 
     def do_GET(self):
-        """Handle GET requests, serving the portal or the success validation page."""
+        """Handle GET requests, serving the upload portal or success page."""
+            # Normalize path
+        if self.path == '/' or self.path == '':
+            self.path = '/templates/index.html'  # Adjust filename if your portal is named differently (e.g., upload.html)
+        
         if self.path in ('/success', '/success.html'):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            
+        
             success_html = """
             <!DOCTYPE html>
             <html>
@@ -257,7 +261,7 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             """
             self.wfile.write(success_html.encode('utf-8'))
         else:
-            # Fall back to default file serving for CSS, JS, and the root upload page
+            # Serve CSS, JS, and the main upload page normally
             super().do_GET()
 
     def send_error(self, code, message=None, explain=None):
