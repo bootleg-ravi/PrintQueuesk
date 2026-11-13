@@ -1531,15 +1531,203 @@ class HomeScreen(tk.Frame):
         if hasattr(self, '_no_ink_modal'):
             delattr(self, '_no_ink_modal')
 
-def fetch_ink_levels(self):
-    """Fetch ink levels or fallback gracefully offline."""
-    try:
-        from config.firebase_config import db
-        ink_ref = db.reference('resources/ink/printer_ink')
-        ink_data = ink_ref.get()
-        # update your UI with ink_data here if applicable
-    except Exception as e:
-        print(f"[Offline Mode] Skipping ink level fetch (No internet connection)")
+    def fetch_ink_levels(self):
+        """Fetch ink levels or fallback gracefully offline."""
+        try:
+            from config.firebase_config import db
+            ink_ref = db.reference('resources/ink/printer_ink')
+            ink_data = ink_ref.get()
+            # update your UI with ink_data here if applicable
+        except Exception as e:
+            print(f"[Offline Mode] Skipping ink level fetch (No internet connection)")
+
+    def fetch_paper_counts(self):
+        """Safely provide default paper counts for offline mode without network calls."""
+        try:
+            self.update_paper_count(100, 100)
+        except Exception as e:
+            print(f"[Offline Mode] Paper count fallback: {e}")
+            self.update_paper_count(100, 100)
+
+    def show_remaining_paper_modal(self, letter_count, a4_count):
+        """Display a modal that shows the remaining paper counts.
+        This modal appears when the start button is clicked, regardless of paper levels.
+        """
+        # Create white overlay that covers the HomeScreen
+        modal_overlay = tk.Frame(self, bg="white")
+        modal_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Scale based on screen
+        screen_w = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
+        scale = max(1.0, min(screen_w / 1366, screen_h / 768))
+
+        # Modal size and rounded box
+        modal_width = int(1050 * scale)
+        modal_height = int(750 * scale)
+        radius = int(20 * scale)
+
+        canvas = tk.Canvas(modal_overlay, width=modal_width, height=modal_height,
+                          bg="white", highlightthickness=0)
+        canvas.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Draw rounded rectangle modal box
+        self._draw_round_rect(canvas, 0, 0, modal_width, modal_height,
+                     radius, fill="white", outline='', width=0)
+        # Inset outline
+        inset = 1
+        self._draw_round_rect(canvas, inset, inset, modal_width - inset, modal_height - inset,
+                     max(0, radius - inset), fill='', outline="#999999", width=2)
+
+        # Main modal container
+        modal_container = tk.Frame(canvas, bg="white")
+
+        # Icon parameters (use information icon design - blue circle with 'i')
+        icon_size = int(110 * scale)
+        circle_color = "#2196F3"  # Blue color for information
+        info_color = "#FFF"  # White for the 'i'
+
+        # Compute circle center
+        icon_cx = modal_width // 2
+        top_margin = max(12, int(10 * scale))
+        icon_cy = int(radius + top_margin + icon_size / 2)
+
+        # Position the content window below the circle
+        content_y = icon_cy + int(icon_size / 2) + int(2 * scale)
+        canvas.create_window(modal_width // 2, content_y, window=modal_container, anchor='n')
+
+        # Draw blue circle
+        circle_id = canvas.create_oval(
+            icon_cx - icon_size // 2,
+            icon_cy - icon_size // 2,
+            icon_cx + icon_size // 2,
+            icon_cy + icon_size // 2,
+            fill=circle_color,
+            outline=circle_color,
+            width=0
+        )
+
+        # Draw white 'i' character in the circle
+        try:
+            info_font_size = max(12, int(icon_size * 0.65))
+            info_font = ("Arial", info_font_size, "bold")
+        except Exception:
+            info_font = ("Arial", int(icon_size * 0.65), "bold")
+
+        info_id = canvas.create_text(icon_cx, icon_cy, text='i', font=info_font, fill=info_color, anchor='center')
+
+        # Raise icon parts above the content window
+        try:
+            canvas.tag_raise(circle_id)
+            canvas.tag_raise(info_id)
+        except Exception:
+            pass
+
+        # Content
+        padding = int(16 * scale)
+        content = tk.Frame(modal_container, bg="white", padx=padding, pady=0)
+        content.pack()
+
+        title_font = ("Bebas Neue", max(34, int(36 * scale)), "bold")
+        tk.Label(content, text="Remaining Paper", font=title_font, bg="white", fg="#333").pack(pady=(int(18 * scale), int(8 * scale)))
+
+        # Subtitle
+        subtitle_font = ("Arial", max(18, int(20 * scale)), "bold")
+        tk.Label(content, text="Current paper stock levels:", font=subtitle_font, bg="white", fg="#666", justify="center").pack(pady=(0, int(14 * scale)))
+
+        # Show Letter and A4 counts — render labels black and numeric values in blue (information color)
+        counts_font = ("Arial", max(22, int(26 * scale)), "bold")
+        counts_frame = tk.Frame(content, bg="white")
+        counts_frame.pack(pady=(0, int(16 * scale)))
+
+        # Build structured items so we can color only the numbers
+        count_items = []
+        try:
+            if isinstance(letter_count, (int, float)):
+                count_items.append(("Letter", int(letter_count)))
+            else:
+                count_items.append(("Letter", 100))
+        except Exception:
+            count_items.append(("Letter", 100))
+        
+        try:
+            if isinstance(a4_count, (int, float)):
+                count_items.append(("A4", int(a4_count)))
+            else:
+                count_items.append(("A4", 100))
+        except Exception:
+            count_items.append(("A4", 100))
+
+        if count_items:
+            for i, (name, val) in enumerate(count_items):
+                if i > 0:
+                    sep = tk.Label(counts_frame, text=" | ", font=counts_font, bg="white", fg="#666")
+                    sep.pack(side="left")
+
+                tk.Label(counts_frame, text=f"{name}: ", font=counts_font, bg="white", fg="#000000").pack(side="left")
+                tk.Label(counts_frame, text=str(val), font=counts_font, bg="white", fg="#b42e41").pack(side="left")
+                # Suffix ' sheets' in black
+                tk.Label(counts_frame, text=" sheets", font=counts_font, bg="white", fg="#000000").pack(side="left")
+        else:
+            tk.Label(counts_frame, text="Unknown", font=counts_font, bg="white", fg="#666").pack()
+
+        # Informational message
+        info_title = "INFORMATION"
+        info_title_font = ("Arial", max(20, int(24 * scale)), "bold")
+        tk.Label(content, text=info_title, font=info_title_font, bg="white", fg="#b42e41", justify="center").pack(pady=(int(3 * scale), int(3 * scale)))
+
+        # Instruction text - split into multiple rows
+        info_sentence_1 = (
+            "Please check the documents you need to print and verify the exact number of pages. "
+            "Check the remaining paper available."
+        )
+        info_sentence_2 = (
+            "If the document pages exceed the remaining paper stock:"
+        )
+        info_sentence_3 = (
+            "⚠️ WARNING: Insufficient paper available."
+        )
+        info_sentence_4 = (
+            "This is a self-service kiosk machine. Please contact our staff for paper replenishment before proceeding with your print job."
+        )
+        info_font = ("Arial", max(15, int(20 * scale)), "bold")
+        tk.Label(content, text=info_sentence_1, font=info_font, bg="white", fg="#333", justify="center", wraplength=modal_width - int(120 * scale)).pack(pady=(int(4 * scale), int(4 * scale)))
+        tk.Label(content, text=info_sentence_2, font=info_font, bg="white", fg="#333", justify="center", wraplength=modal_width - int(120 * scale)).pack(pady=(int(4 * scale), int(2 * scale)))
+        tk.Label(content, text=info_sentence_3, font=info_font, bg="white", fg="#b42e41", justify="center", wraplength=modal_width - int(120 * scale)).pack(pady=(int(6 * scale), int(4 * scale)))
+        tk.Label(content, text=info_sentence_4, font=info_font, bg="white", fg="#333", justify="center", wraplength=modal_width - int(120 * scale)).pack(pady=(int(4 * scale), int(2 * scale)))
+
+        # Button frame
+        buttons_frame = tk.Frame(content, bg="white")
+        buttons_frame.pack(pady=(int(15 * scale), 0))
+
+        button_font = ("Arial", max(16, int(20 * scale)), "bold")
+        button_padx = int(35 * scale)
+        button_pady = int(14 * scale)
+
+        # Understood button
+        understood_button = tk.Button(
+            buttons_frame,
+            text="Got It",
+            font=button_font,
+            bg="#b42e41",
+            fg="white",
+            bd=0,
+            relief="flat",
+            padx=button_padx,
+            pady=button_pady,
+            command=lambda: self.close_remaining_paper_modal(modal_overlay)
+        )
+        understood_button.pack(side="left", padx=int(10 * scale))
+
+        # Store reference so it can be closed later
+        self._remaining_paper_modal = modal_overlay
+
+    def close_remaining_paper_modal(self, modal_overlay):
+        """Close the remaining paper modal."""
+        if modal_overlay and modal_overlay.winfo_exists():
+            modal_overlay.destroy()
+        if hasattr(self, '_remaining_paper_modal'):
+            delattr(self, '_remaining_paper_modal')
 
     def fetch_paper_counts(self):
         """Safely provide default paper counts for offline mode without network calls."""
