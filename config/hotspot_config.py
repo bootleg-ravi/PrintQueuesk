@@ -16,7 +16,18 @@ import qrcode
 from io import BytesIO
 import pytz
 import json
+import socket
 
+def get_local_ip():
+    """Automatically detect the PC's active local network IP address."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "192.168.137.1"
 def get_total_pages(file_path):
     """Get total pages from PDF or DOCX files."""
     try:
@@ -306,10 +317,41 @@ class HotspotConfig:
     
     HOTSPOT_NAME = "PrinTech Hotspot"
     HOTSPOT_PASSWORD = "printech123"
-    HOTSPOT_IP = "192.168.137.1"
     DEFAULT_PORT = 8080
     
     @classmethod
+    def get_hotspot_url(cls, port=None):
+        port = port or cls.DEFAULT_PORT
+        # Dynamically fetch the current active local IP instead of hardcoding it
+        active_ip = get_local_ip()
+        return f"http://{active_ip}:{port}"
+    
+    @classmethod
+    def get_upload_directory(cls):
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "downloads")
+    
+    @classmethod
+    def generate_qr_code(cls, port=None, output_path=None):
+        port = port or cls.DEFAULT_PORT
+        url = cls.get_hotspot_url(port) # Uses the dynamic URL automatically
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        if output_path:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            img.save(output_path)
+            print(f"QR code saved to: {output_path}")
+        
+        return img
     def get_hotspot_url(cls, port=None):
         port = port or cls.DEFAULT_PORT
         return f"http://{cls.HOTSPOT_IP}:{port}"
