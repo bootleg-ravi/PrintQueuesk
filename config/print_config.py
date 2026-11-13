@@ -5,6 +5,7 @@ from typing import Optional, Tuple, List, Union
 
 from PIL import Image, ImageWin
 
+import fitz
 import win32print
 import win32api
 import win32ui
