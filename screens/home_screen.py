@@ -1522,7 +1522,7 @@ def fetch_ink_levels(self):
     except Exception as e:
         print(f"[Offline Mode] Skipping ink level fetch (No internet connection)")
 
-def fetch_paper_counts(self):
+    def fetch_paper_counts(self):
         """Fetch paper inventory counts locally or fallback gracefully offline."""
         try:
             from config.firebase_config import db
@@ -1541,7 +1541,7 @@ def fetch_paper_counts(self):
             print(f"[Offline Mode] Using default paper counts (No internet connection)")
             self.update_paper_count(100, 100)
 
-def show_remaining_paper_modal(self, letter_count, a4_count):
+    def show_remaining_paper_modal(self, letter_count, a4_count):
         """Display a modal that shows the remaining paper counts.
         This modal appears when the start button is clicked, regardless of paper levels.
         """
@@ -1714,14 +1714,14 @@ def show_remaining_paper_modal(self, letter_count, a4_count):
         # Store reference so it can be closed later
         self._remaining_paper_modal = modal_overlay
 
-def close_remaining_paper_modal(self, modal_overlay):
+    def close_remaining_paper_modal(self, modal_overlay):
         """Close the remaining paper modal."""
         if modal_overlay and modal_overlay.winfo_exists():
             modal_overlay.destroy()
         if hasattr(self, '_remaining_paper_modal'):
             delattr(self, '_remaining_paper_modal')
 
-def _show_low_paper_notice(self, letter_count, a4_count):
+    def _show_low_paper_notice(self, letter_count, a4_count):
         """Display the low-paper notice frame with the accurate counts."""
         msgs = []
         try:
@@ -1747,28 +1747,28 @@ def _show_low_paper_notice(self, letter_count, a4_count):
         except Exception:
             pass
 
-def _hide_notice(self):
+    def _hide_notice(self):
         try:
             if hasattr(self, 'notice_frame') and self.notice_frame.winfo_exists():
                 self.notice_frame.pack_forget()
         except Exception:
             pass
 
-def update_status(self, data):
+    def update_status(self, data):
         # This can be expanded if you need to show a list of jobs
         document_name = data.get('document_name')
         status = data.get('status')
         print(f"Received update for {document_name}: {status}")
         self.set_status(f"Status for {document_name}: {status.upper()}")
 
-def load_data(self, data=None):
+    def load_data(self, data=None):
         # Only show wifi view if explicitly needed, not on initial load
         # Check if we're coming from another screen (data is provided)
         if data is not None:
             self.show_wifi_view()
         # Otherwise, keep the current view (main_view on initial launch)
         
-def _update_dots_animation(self, canvas, dot_objects, frame_count):
+    def _update_dots_animation(self, canvas, dot_objects, frame_count):
         """Update the position of the dots to create a wave animation."""
         try:
             if not canvas.winfo_exists():
@@ -1806,7 +1806,7 @@ def _update_dots_animation(self, canvas, dot_objects, frame_count):
         except Exception:
             pass  # Stop animation if any error occurs
     
-def show_transition_screen(self, message="Preparing your print job"):
+    def show_transition_screen(self, message="Preparing your print job"):
         """Show a transition screen with an animated loading message."""
         # Hide any existing transition screen first
         self.hide_transition_screen()
@@ -1873,7 +1873,7 @@ def show_transition_screen(self, message="Preparing your print job"):
         
         return transition_frame
     
-def show_payment_successful(self):
+    def show_payment_successful(self):
         """Show Payment Successful message."""
         self.hide_transition_screen()
         
@@ -1900,11 +1900,11 @@ def show_payment_successful(self):
         
         return success_frame
     
-def show_printing_in_process(self):
+    def show_printing_in_process(self):
         """Show Printing In Process message with animation."""
         return self.show_transition_screen("Printing In Process")
     
-def show_print_complete(self):
+    def show_print_complete(self):
         """Show Print Complete message."""
         self.hide_transition_screen()
         
@@ -1934,12 +1934,12 @@ def show_print_complete(self):
         
         return complete_frame
     
-def return_to_main_view(self):
+    def return_to_main_view(self):
         """Return to the main view after print complete."""
         self.hide_transition_screen()
         self.show_main_view()
         
-def hide_transition_screen(self):
+    def hide_transition_screen(self):
         """Hide and destroy the transition screen if it exists."""
         # Cancel any pending animation update
         if hasattr(self, 'animation_id') and self.animation_id:
@@ -1960,7 +1960,7 @@ def hide_transition_screen(self):
         if hasattr(self, '_dot_objects'):
             delattr(self, '_dot_objects')
     
-def launch_hotspot_screen(self):
+    def launch_hotspot_screen(self):
         """Navigate to the hotspot screen within the same window."""
         try:
             # Navigate to the hotspot screen frame
@@ -1972,7 +1972,7 @@ def launch_hotspot_screen(self):
             from tkinter import messagebox
             messagebox.showerror("Error", f"Failed to navigate to hotspot screen: {str(e)}")
 
-def update_paper_count(self, short_count, a4_count):
+    def update_paper_count(self, short_count, a4_count):
         """Update the remaining paper count display on home screen if widgets exist."""
         try:
             if hasattr(self, 'short_paper_label'):
@@ -1982,7 +1982,7 @@ def update_paper_count(self, short_count, a4_count):
         except Exception:
             pass
 
-def fetch_paper_counts(self):
+    def fetch_paper_counts(self):
         """Fetch paper inventory counts locally or fallback gracefully offline."""
         try:
             from config.firebase_config import db
