@@ -11,13 +11,11 @@ import threading
 from datetime import datetime
 import fitz  # PyMuPDF
 from docx import Document
-from firebase_admin import db
 import time
 import qrcode
 from io import BytesIO
 import pytz
 import json
-
 
 def get_total_pages(file_path):
     """Get total pages from PDF or DOCX files."""
@@ -48,99 +46,6 @@ def get_total_pages(file_path):
         print(f"Error getting total pages: {e}")
         return 1
 
-
-def save_file_to_firebase(file_path, file_name):
-    """Save file information to Firebase and return job data."""
-    max_retries = 3
-    retry_delay = 5  # seconds
-
-    for attempt in range(max_retries):
-        try:
-            # On success, return the job_data
-            job_data = _save_file_to_firebase_attempt(file_path, file_name)
-            if job_data:
-                return job_data
-            # If _save_file_to_firebase_attempt returns None without an exception, it's a non-retryable error.
-            else:
-                print("Failed to save to Firebase due to an internal error without exception.")
-                return None
-
-        except Exception as e:
-            print(f"Attempt {attempt + 1} of {max_retries} failed: {e}")
-            if attempt < max_retries - 1:
-                print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                print("All retries failed. Could not save to Firebase.")
-                import traceback
-                traceback.print_exc()
-                return None
-
-
-def _save_file_to_firebase_attempt(file_path, file_name):
-    """Attempt to save file information to Firebase. Can raise exceptions."""
-    total_pages = get_total_pages(file_path)
-    file_size = os.path.getsize(file_path)
-    
-    # Set Philippines timezone
-    ph_timezone = pytz.timezone('Asia/Manila')
-    now_ph = datetime.now(ph_timezone).strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Create a new job entry in Firebase with the same structure as the web app
-    jobs_ref = db.reference('jobs/print_jobs')
-    
-    # Get existing jobs to auto-increment job ID
-    existing_jobs = jobs_ref.get()
-    if existing_jobs:
-        if isinstance(existing_jobs, dict):
-            existing_ids = [int(k) for k in existing_jobs.keys() if str(k).isdigit()]
-        elif isinstance(existing_jobs, list):
-            # Handle cases where Firebase returns a list for sequential keys
-            existing_ids = [i for i, v in enumerate(existing_jobs) if v is not None]
-        else:
-            existing_ids = []
-        next_job_id = str(max(existing_ids) + 1) if existing_ids else '1'
-    else:
-        next_job_id = '1'
-    
-    # Job data structure matching the web app format
-    job_data = {
-        'file_name': file_name,
-        'file_size': file_size,
-        'total_pages': total_pages,
-        'status': 'pending',
-        'created_at': now_ph,
-        'local_path': file_path,
-        'file_path': file_path, # Alias for GUI
-        'upload_source': 'hotspot',
-        'details': [
-            {
-                'file_name': file_name,
-                'page_range': 'all',
-                'color_mode': 'colored',
-                'total_price': 0,
-                'inserted_amount': 0,
-                'change_amount': 0,
-                'status': 'pending',
-                'created_at': now_ph,
-                'local_path': file_path,
-                'file_path': file_path,
-                'num_copies': 1,
-                'page_size': 'Letter Size',
-                'scale_mode': 'fit',
-                'scale_percentage': 100
-            }
-        ]
-    }
-    
-    # Save to Firebase with the auto-incremented job ID
-    jobs_ref.child(next_job_id).set(job_data)
-    job_data['job_id'] = next_job_id
-    
-    print(f"[Firebase] Job created: {next_job_id}, File: {file_name}, Pages: {total_pages}, Source: hotspot")
-    return job_data
-
-
 class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     """Custom HTTP request handler for file uploads and serving web pages."""
     
@@ -152,7 +57,6 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """Handle GET requests for serving HTML pages and static files."""
         if self.path == '/':
-            # Serve main upload page
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
@@ -166,7 +70,6 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, 'Template file not found: hotspot.html')
                 
         elif self.path.startswith('/success'):
-            # Serve success page
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
@@ -180,20 +83,16 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, 'Template file not found: hotspot_uploaded.html')
                 
         elif self.path.startswith('/upload'):
-            # Redirect GET requests for /upload to the main page
             self.send_response(302)
             self.send_header('Location', '/')
             self.end_headers()
-            print("Redirecting GET request for /upload to /")
             
         elif self.path.startswith('/static/'):
-            # Serve static files (CSS, JS, images)
             file_path = os.path.join(self.base_path, self.path[1:])
             try:
                 with open(file_path, 'rb') as f:
                     content = f.read()
                 
-                # Determine content type
                 if self.path.endswith('.css'):
                     content_type = 'text/css'
                 elif self.path.endswith('.js'):
@@ -261,7 +160,7 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 filepath = f"{base}_{counter}{ext}"
                 counter += 1
             
-try:
+            try:
                 with open(filepath, 'wb') as f:
                     preline = self.rfile.readline()
                     remainbytes -= len(preline)
@@ -280,7 +179,7 @@ try:
                             f.write(preline)
                             preline = line
                 
-                # --- NEW OFFLINE OVERRIDE ---
+                # --- NEW OFFLINE JOB CREATION ---
                 job_id = f"LOCAL-{int(time.time())}"
                 job_data = {
                     'job_id': job_id,
@@ -306,12 +205,11 @@ try:
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
-                import json
                 response = {'status': 'success', 'filename': filename}
                 self.wfile.write(json.dumps(response).encode())
                 print(f"Successfully uploaded {filename}")
                 
-except Exception as e:
+            except Exception as e:
                 print(f"Error during file upload: {e}")
                 self.send_response(500)
                 self.end_headers()
@@ -320,18 +218,8 @@ class HotspotServer:
     """Manages the HTTP server for hotspot file transfers."""
     
     def __init__(self, port=8080, upload_directory=None, callback=None):
-        """
-        Initialize the hotspot server.
-        
-        Args:
-            port (int): Port number to run the server on
-            upload_directory (str): Directory path where uploaded files will be saved
-            callback (callable): Function to call when a file is received
-        """
         self.port = port
-        self.upload_directory = upload_directory or os.path.join(
-            os.path.expanduser("~"), "Documents", "PrinTech_Received_Files"
-        )
+        self.upload_directory = upload_directory or HotspotConfig.get_upload_directory()
         self.callback = callback
         self.server = None
         self.server_thread = None
@@ -358,18 +246,12 @@ class HotspotServer:
     def _run_server(self):
         """Internal method to run the HTTP server."""
         try:
-            # Bind to all interfaces (0.0.0.0) so it can be accessed from any IP
             with socketserver.TCPServer(("0.0.0.0", self.port), SimpleHTTPRequestHandler) as httpd:
                 self.server = httpd
                 print(f"HTTP Server successfully bound to port {self.port}")
-                print(f"Server accessible at:")
-                print(f"  - http://localhost:{self.port}")
-                print(f"  - http://192.168.137.1:{self.port}")
-                print(f"  - Or any local network IP on port {self.port}")
                 httpd.serve_forever()
         except Exception as e:
             print(f"Server error: {e}")
-            print("This might be because another service is using port 8080")
     
     def stop(self):
         """Stop the HTTP server."""
@@ -379,15 +261,8 @@ class HotspotServer:
             self.server = None
     
     def update_callback(self, callback):
-        """
-        Update the callback function for file uploads.
-        
-        Args:
-            callback (callable): New callback function
-        """
         self.callback = callback
         SimpleHTTPRequestHandler.callback = callback
-
 
 class HotspotConfig:
     """Configuration settings for the hotspot."""
@@ -411,20 +286,10 @@ class HotspotConfig:
     
     @classmethod
     def generate_qr_code(cls, port=None, output_path=None):
-        """
-        Generate a QR code for the hotspot file upload URL.
-        
-        Args:
-            port (int): Port number for the hotspot server
-            output_path (str): Optional path to save the QR code image
-            
-        Returns:
-            PIL.Image: QR code image
-        """
+        """Generate a QR code for the hotspot file upload URL."""
         port = port or cls.DEFAULT_PORT
         url = f"http://{cls.HOTSPOT_IP}:{port}"
         
-        # Create QR code
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -434,10 +299,8 @@ class HotspotConfig:
         qr.add_data(url)
         qr.make(fit=True)
         
-        # Create image
         img = qr.make_image(fill_color="black", back_color="white")
         
-        # Save to file if path provided
         if output_path:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             img.save(output_path)
