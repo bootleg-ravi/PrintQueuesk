@@ -83,7 +83,6 @@ class HomeScreen(tk.Frame):
             command=self.show_wifi_view
         )
         start_button.pack(pady=(0, 0))
-
     def _create_wifi_view_content(self):
         screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
@@ -225,7 +224,7 @@ class HomeScreen(tk.Frame):
         center = tk.Frame(self.wifi_view, bg="white")
         center.pack(expand=True, fill="x")
 
-        # Light gray rounded container with 1 inch (96 pixels) padding on left and right
+        # Light gray rounded container with padding on left and right
         container_frame, container = self._rounded_container(
             center, bg="#e6e6e6", radius=15, padding=int(16 * scale)
         )
@@ -238,7 +237,7 @@ class HomeScreen(tk.Frame):
         cards.grid_columnconfigure(1, weight=1, uniform="cards")
         cards.grid_rowconfigure(0, weight=1)
 
-        # Left side: QR Code directly on gray background (no card)
+        # Left side: QR Code directly on gray background
         qr_container = tk.Frame(cards, bg="#e6e6e6")
         qr_container.grid(row=0, column=0, sticky="nsew", padx=(int(15 * scale), int(15 * scale)))
 
@@ -247,29 +246,131 @@ class HomeScreen(tk.Frame):
         qr_inner.pack(expand=True)
 
         try:
-            qr_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'img', 'qr-code.png')
-            print(f"Loading QR code from: {qr_path}")
-            qr_image = Image.open(qr_path).resize((475, 450), Image.Resampling.LANCZOS)
-            self.qr_photo = ImageTk.PhotoImage(qr_image)
+            from config.hotspot_config import HotspotConfig
+            qr_image = HotspotConfig.generate_qr_code(port=HotspotConfig.DEFAULT_PORT)
+            qr_image_resized = qr_image.resize((475, 450), Image.Resampling.LANCZOS)
+            self.qr_photo = ImageTk.PhotoImage(qr_image_resized)
             qr_label = tk.Label(qr_inner, image=self.qr_photo, bg="#e6e6e6")
             qr_label.pack(pady=(10, 10))
         except Exception as e:
-            print(f"Error loading QR code: {e}")
-            qr_label = tk.Label(qr_inner, text="QR Code Not Found", 
+            print(f"Error generating QR code: {e}")
+            qr_label = tk.Label(qr_inner, text="QR Code Generation Failed", 
                               font=("Arial", 14), bg="#e6e6e6", fg="red")
             qr_label.pack(pady=(10, 10))
 
-        # URL below QR code in red color
+        # Local URL below QR code in red color
+        try:
+            from config.hotspot_config import HotspotConfig
+            hotspot_url = HotspotConfig.get_hotspot_url()
+        except Exception:
+            hotspot_url = "http://192.168.137.1:8080"
+
         url_label = tk.Label(
             qr_inner,
-            text="https://printqueuesk.azurewebsites.net",
+            text=hotspot_url,
             font=url_font,
             bg="#e6e6e6",
             fg="#b42e41"
         )
         url_label.pack(pady=(0, 10))
+
+        # Right Card: Status and Action Buttons
+        brand_red = "#b42e41"
+        right_container = tk.Frame(cards, bg="#e6e6e6")
+        right_container.grid(row=0, column=1, sticky="nsew", padx=(int(15 * scale), int(15 * scale)))
         
-        # Fetch and display initial paper counts from Firebase (with delay to ensure widgets are ready)
+        right_center = tk.Frame(right_container, bg="#e6e6e6")
+        right_center.pack(expand=True, fill="both", pady=(int(8 * scale), 0))
+        
+        right_frame, right = self._rounded_container(
+            right_center, bg="white", radius=15, padding=int(10 * scale), fill_x=True, vcenter=False
+        )
+        right_frame.pack(fill="x", expand=False, padx=int(10 * scale), anchor="n")
+        right_frame.config(height=int(430 * scale))
+        right_frame.pack_propagate(False)
+
+        # Logo at the top of right card
+        logo_holder = tk.Frame(right, bg="white")
+        logo_holder.pack(pady=(int(20 * scale), int(10 * scale)))
+        self._load_logo(logo_holder, scale, max_w=int(380 * scale))
+
+        # Content box for status and action buttons
+        price_content = tk.Frame(right, bg="white")
+        price_content.pack(pady=(int(15 * scale), 0))
+
+        # Status message
+        self.status_label = tk.Label(
+            price_content,
+            text="Waiting For Files...",
+            font=status_font,
+            bg="white",
+            fg="#333"
+        )
+        self.status_label.pack(anchor="center", pady=(int(20 * scale), int(25 * scale)))
+
+        # Button container for options stacked vertically
+        button_container = tk.Frame(price_content, bg="white")
+        button_container.pack(anchor="center", pady=(int(5 * scale), int(5 * scale)))
+        
+        button_width = int(380 * scale)
+        button_height = int(60 * scale)
+        button_radius = 8
+        
+        # Hotspot button (Top option)
+        hotspot_frame = tk.Frame(button_container, bg="white", width=button_width, height=button_height)
+        hotspot_frame.pack(pady=(0, int(15 * scale)))
+        hotspot_frame.pack_propagate(False)
+        
+        hotspot_canvas = tk.Canvas(hotspot_frame, width=button_width, height=button_height, 
+                                   bg="white", highlightthickness=0)
+        hotspot_canvas.place(relx=0, rely=0)
+        
+        self._draw_round_rect(hotspot_canvas, 0, 0, button_width, button_height, 
+                           button_radius, fill=brand_red, outline='')
+        
+        hotspot_button = tk.Button(
+            hotspot_canvas,
+            text="Receive File via Hotspot",
+            font=button_font,
+            bg=brand_red, 
+            fg="white",
+            activebackground="#d12246", 
+            activeforeground="white",
+            relief=tk.FLAT, 
+            bd=0,
+            command=self.launch_hotspot_screen,
+            cursor="hand2"
+        )
+        hotspot_button.place(relx=0.5, rely=0.5, anchor="center")
+        
+        # USB button (Bottom option)
+        usb_frame = tk.Frame(button_container, bg="white", width=button_width, height=button_height)
+        usb_frame.pack()
+        usb_frame.pack_propagate(False)
+        
+        usb_canvas = tk.Canvas(usb_frame, width=button_width, height=button_height,
+                              bg="white", highlightthickness=0)
+        usb_canvas.place(relx=0, rely=0)
+        
+        self._draw_round_rect(usb_canvas, 0, 0, button_width, button_height,
+                           button_radius, fill=brand_red, outline='')
+        
+        usb_button = tk.Button(
+            usb_canvas,
+            text="Transfer via USB Drive",
+            font=button_font,
+            bg=brand_red,
+            fg="white",
+            activebackground="#d12246",
+            activeforeground="white",
+            relief=tk.FLAT,
+            bd=0,
+            command=self.show_usb_drive_screen,
+            cursor="hand2"
+        )
+        usb_button.place(relx=0.5, rely=0.5, anchor="center")
+        
+        # Fetch and display initial paper counts (with delay to ensure widgets are ready)
         self.after(100, self.fetch_paper_counts)
 
     def update_paper_count(self, short_count, a4_count):

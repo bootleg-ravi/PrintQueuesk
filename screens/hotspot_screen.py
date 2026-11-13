@@ -250,10 +250,8 @@ class HotspotScreen(tk.Frame):
 
         # Generate and display QR code dynamically for local hotspot IP
         try:
-            # Generate QR code for the local hotspot URL
             qr_image = HotspotConfig.generate_qr_code(port=HotspotConfig.DEFAULT_PORT)
             
-            # Resize the QR code image
             qr_image_resized = qr_image.resize((475, 450), Image.Resampling.LANCZOS)
             self.qr_photo = ImageTk.PhotoImage(qr_image_resized)
             qr_label = tk.Label(qr_inner, image=self.qr_photo, bg="#e6e6e6")
@@ -265,7 +263,7 @@ class HotspotScreen(tk.Frame):
                               font=("Arial", 14), bg="#e6e6e6", fg="red")
             qr_label.pack(pady=(10, 10))
 
-        # URL below QR code in red color - show the actual hotspot URL
+        # Force display of the local hotspot URL under the QR code
         hotspot_url = HotspotConfig.get_hotspot_url()
         url_label = tk.Label(
             qr_inner,
@@ -759,18 +757,21 @@ class HotspotScreen(tk.Frame):
             canvas.create_line(x2, y1 + r, x2, y2 - r, fill=outline, width=width, tags=(tag,) if tag else None)
     
     def update_paper_count(self, short_count, a4_count):
-        """Update the remaining paper count display."""
-        if hasattr(self, 'short_paper_label'):
-            self.short_paper_label.config(text=f"Letter: {short_count} sheets")
-        if hasattr(self, 'a4_paper_label'):
-            self.a4_paper_label.config(text=f"A4: {a4_count} sheets")
-    
+        """Update the remaining paper count display on home screen if widgets exist."""
+        try:
+            if hasattr(self, 'short_paper_label'):
+                self.short_paper_label.config(text=f"Letter: {short_count} sheets")
+            if hasattr(self, 'a4_paper_label'):
+                self.a4_paper_label.config(text=f"A4: {a4_count} sheets")
+        except Exception:
+            pass
+
     def fetch_paper_counts(self):
-        """Safely set default paper counts for offline hotspot mode."""
+        """Safely provide default paper counts for offline mode without network calls."""
         try:
             self.update_paper_count(100, 100)
         except Exception as e:
-            print(f"[Offline Mode] Using default paper counts: {e}")
+            print(f"[Offline Mode] Paper count fallback: {e}")
             self.update_paper_count(100, 100)
     
     def reset_idle_timer(self):
