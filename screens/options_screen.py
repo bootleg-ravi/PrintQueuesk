@@ -212,7 +212,7 @@ class OptionsScreen(tk.Frame):
         # Returns True if payment is complete for the current job
         return getattr(self.controller.frames.get("PaymentScreen"), "printing_started", False)
 
-  def start_printing(self):
+    def start_printing(self):
         color_option = self.color_var.get()
         black_price, color_price = self.fetch_latest_prices()
         if black_price is None or color_price is None:
