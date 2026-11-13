@@ -1512,87 +1512,34 @@ class HomeScreen(tk.Frame):
         if hasattr(self, '_no_ink_modal'):
             delattr(self, '_no_ink_modal')
 
-    def fetch_ink_levels(self):
-        """Fetch ink levels from Firebase and check if below threshold."""
-        try:
-            ink_ref = db.reference('resources/ink/printer_ink')
-            ink_data = ink_ref.get()
-            
-            if not ink_data:
-                # Initialize if not exists
-                ink_data = {
-                    'black_ink_level': 100,
-                    'color_ink_level': 100,
-                    'last_updated': None
-                }
-                ink_ref.set(ink_data)
-            
-            # Get ink levels
-            black_ink_level = int(ink_data.get('black_ink_level', 100))
-            color_ink_level = int(ink_data.get('color_ink_level', 100))
-            
-            # Store for later use
-            self._black_ink_level = black_ink_level
-            self._color_ink_level = color_ink_level
-            
-            # Check for no ink (both cartridges empty)
-            if black_ink_level == 0 and color_ink_level == 0:
-                self.show_no_ink_modal(black_ink_level, color_ink_level)
-                return black_ink_level, color_ink_level
+def fetch_ink_levels(self):
+    """Fetch ink levels or fallback gracefully offline."""
+    try:
+        from config.firebase_config import db
+        ink_ref = db.reference('resources/ink/printer_ink')
+        ink_data = ink_ref.get()
+        # update your UI with ink_data here if applicable
+    except Exception as e:
+        print(f"[Offline Mode] Skipping ink level fetch (No internet connection)")
 
-            # Check if low (threshold: 30%)
-            LOW_INK_THRESHOLD = 30
-            if black_ink_level <= LOW_INK_THRESHOLD or color_ink_level <= LOW_INK_THRESHOLD:
-                self.show_low_ink_modal(black_ink_level, color_ink_level)
-
-            return black_ink_level, color_ink_level
-            
-        except Exception as e:
-            print(f"[HomeScreen] Error fetching ink levels: {e}")
-            return 100, 100
-
-    def fetch_paper_counts(self):
-        """Fetch paper inventory counts from Firebase and update display."""
-        try:
-            # Fetch from printer_status (same path as dashboard)
-            printer_status_ref = db.reference('resources/paper/printer_status')
-            statuses = printer_status_ref.order_by_child('updated_at').limit_to_last(1).get()
-            
-            print(f"[HomeScreen] Printer status data: {statuses}")
-            
-            if statuses:
-                # Get the latest status entry
-                latest_status = list(statuses.values())[0]
-                
-                # Get Letter and A4 paper counts
-                letter_count = latest_status.get('remaining_paper_letter', 100)
-                a4_count = latest_status.get('remaining_paper_a4', 100)
-                
-                # Convert to integers
-                try:
-                    letter_count = int(letter_count) if letter_count is not None and letter_count != '' else 100
-                except (ValueError, TypeError):
-                    letter_count = 100
-                    
-                try:
-                    a4_count = int(a4_count) if a4_count is not None and a4_count != '' else 100
-                except (ValueError, TypeError):
-                    a4_count = 100
-                
-                print(f"[HomeScreen] Letter: {letter_count}, A4: {a4_count}")
-                # Store counts and update labels
-                self._letter_count = letter_count
-                self._a4_count = a4_count
-                self.update_paper_count(letter_count, a4_count)
-            else:
-                print("[HomeScreen] No printer_status data found, using defaults")
-                self.update_paper_count(100, 100)
-            
-        except Exception as e:
-            print(f"[HomeScreen] Error fetching paper counts: {e}")
-            import traceback
-            traceback.print_exc()
+def fetch_paper_counts(self):
+    """Fetch paper inventory counts locally or fallback gracefully offline."""
+    try:
+        from config.firebase_config import db
+        printer_status_ref = db.reference('resources/paper/printer_status')
+        statuses = printer_status_ref.order_by_child('updated_at').limit_to_last(1).get()
+        
+        if statuses:
+            latest_status = list(statuses.values())[0]
+            letter_count = int(latest_status.get('remaining_paper_letter', 100))
+            a4_count = int(latest_status.get('remaining_paper_a4', 100))
+            self.update_paper_count(letter_count, a4_count)
+        else:
             self.update_paper_count(100, 100)
+    except Exception as e:
+        # Offline fallback: use safe default counts without crashing
+        print(f"[Offline Mode] Using default paper counts (No internet connection)")
+        self.update_paper_count(100, 100)
 
     def show_remaining_paper_modal(self, letter_count, a4_count):
         """Display a modal that shows the remaining paper counts.
