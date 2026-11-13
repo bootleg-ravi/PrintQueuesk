@@ -224,25 +224,17 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"Successfully uploaded {filename}")
 
     def do_GET(self):
-        """Handle GET requests, serving the upload portal or success page."""
-        if self.path == '/' or self.path == '':
+        """Explicitly handle all GET requests to guarantee index, CSS, JS, and success pages load correctly."""
+        path = self.path.split('?')[0]
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        if path == '/' or path == '':
+            file_path = os.path.join(root_dir, 'templates', 'index.html')
+            content_type = 'text/html'
+        elif path in ('/success', '/success.html'):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            
-            # Locate index.html safely from the project root
-            index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'templates', 'index.html')
-            try:
-                with open(index_path, 'rb') as f:
-                    self.wfile.write(f.read())
-            except Exception as e:
-                self.wfile.write(b"Error loading upload portal template.")
-                
-        elif self.path in ('/success', '/success.html'):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            
             success_html = """
             <!DOCTYPE html>
             <html>
@@ -269,9 +261,41 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             </html>
             """
             self.wfile.write(success_html.encode('utf-8'))
+            return
+        elif path.startswith('/static/'):
+            file_path = os.path.join(root_dir, path.lstrip('/'))
+            if path.endswith('.css'):
+                content_type = 'text/css'
+            elif path.endswith('.js'):
+                content_type = 'application/javascript'
+            elif path.endswith('.png'):
+                content_type = 'image/png'
+            elif path.endswith('.jpg') or path.endswith('.jpeg'):
+                content_type = 'image/jpeg'
+            else:
+                content_type = 'application/octet-stream'
         else:
-            # Serve CSS, JS, and static assets normally from their correct paths
-            super().do_GET()
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"404 Not Found")
+            return
+
+        # Serve the requested file with correct headers
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            try:
+                with open(file_path, 'rb') as f:
+                    self.send_response(200)
+                    self.send_header('Content-type', content_type)
+                    self.end_headers()
+                    self.wfile.write(f.read())
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(b"Internal Server Error")
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"File not found")
 
     def send_error(self, code, message=None, explain=None):
         """Override the default 404 error page to redirect back to the upload screen."""
