@@ -28,6 +28,7 @@ def get_local_ip():
         return ip
     except Exception:
         return "192.168.137.1"
+
 def get_total_pages(file_path):
     """Get total pages from PDF or DOCX files."""
     try:
@@ -111,7 +112,6 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             clean_path = path.lstrip('/')
             file_path = os.path.join(self.base_path, clean_path)
             
-            # If not found directly, check inside the static folder
             if not os.path.exists(file_path):
                 potential_static = os.path.join(self.base_path, 'static', clean_path)
                 if os.path.exists(potential_static):
@@ -122,7 +122,6 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         if os.path.exists(potential_sub):
                             file_path = potential_sub
 
-            # Determine correct MIME type
             if file_path.endswith('.css'):
                 content_type = 'text/css'
             elif file_path.endswith('.js'):
@@ -136,7 +135,6 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 content_type = 'application/octet-stream'
 
-        # Serve the resolved file securely
         if os.path.exists(file_path) and os.path.isfile(file_path):
             try:
                 with open(file_path, 'rb') as f:
@@ -237,11 +235,9 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     }]
                 }
                 
-                # Trigger kiosk OptionsScreen
                 if self.callback:
                     self.callback(filepath, job_data)
                 
-                # Send JSON success response back to frontend JS
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
@@ -258,7 +254,6 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
 
     def send_error(self, code, message=None, explain=None):
-        """Override the default 404 error page to redirect back to the upload screen."""
         if code == 404:
             self.send_response(302)
             self.send_header('Location', '/')
@@ -282,7 +277,6 @@ class HotspotServer:
         SimpleHTTPRequestHandler.callback = self.callback
     
     def start(self):
-        """Start the HTTP server in a separate thread."""
         try:
             self.server_thread = threading.Thread(target=self._run_server, daemon=True)
             self.server_thread.start()
@@ -292,7 +286,6 @@ class HotspotServer:
             print(f"Error starting server: {e}")
     
     def _run_server(self):
-        """Internal method to run the HTTP server."""
         try:
             with socketserver.TCPServer(("0.0.0.0", self.port), SimpleHTTPRequestHandler) as httpd:
                 self.server = httpd
@@ -302,7 +295,6 @@ class HotspotServer:
             print(f"Server error: {e}")
     
     def stop(self):
-        """Stop the HTTP server."""
         if self.server:
             print("Shutting down server...")
             self.server.shutdown()
@@ -322,7 +314,6 @@ class HotspotConfig:
     @classmethod
     def get_hotspot_url(cls, port=None):
         port = port or cls.DEFAULT_PORT
-        # Dynamically fetch the current active local IP instead of hardcoding it
         active_ip = get_local_ip()
         return f"http://{active_ip}:{port}"
     
@@ -333,37 +324,7 @@ class HotspotConfig:
     @classmethod
     def generate_qr_code(cls, port=None, output_path=None):
         port = port or cls.DEFAULT_PORT
-        url = cls.get_hotspot_url(port) # Uses the dynamic URL automatically
-        
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(url)
-        qr.make(fit=True)
-        
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        if output_path:
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            img.save(output_path)
-            print(f"QR code saved to: {output_path}")
-        
-        return img
-    def get_hotspot_url(cls, port=None):
-        port = port or cls.DEFAULT_PORT
-        return f"http://{cls.HOTSPOT_IP}:{port}"
-    
-    @classmethod
-    def get_upload_directory(cls):
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "downloads")
-    
-    @classmethod
-    def generate_qr_code(cls, port=None, output_path=None):
-        port = port or cls.DEFAULT_PORT
-        url = f"http://{cls.HOTSPOT_IP}:{port}"
+        url = cls.get_hotspot_url(port)
         
         qr = qrcode.QRCode(
             version=1,
