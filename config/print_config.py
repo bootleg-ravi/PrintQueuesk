@@ -438,9 +438,9 @@ def print_pdf_via_gdi(file_path: str, printer_name: str, dpi: int = 150,
         hDC.CreatePrinterDC(printer_name)
         hDC.StartDoc(doc_name or "Print Job")
         
-        # Get printable dimensions of the printer in pixels
+        # Get printable dimensions ofaconda the printer in pixels
         horz_res = hDC.GetDeviceCaps(win32con.HORZRES)
-        vert_res = hDC.GetDeviceCaps(win32con.VERTICALRES)
+        vert_res = hDC.GetDeviceCaps(win32con.VERTRES)
         
         for page_num in range(len(doc)):
             page = doc[page_num]
