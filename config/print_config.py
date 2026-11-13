@@ -425,41 +425,72 @@ def print_images_via_gdi(images: List[Image.Image], printer_name: str, render_dp
         return False, f"GDI print error: {e}"
 
 
-def print_pdf_via_gdi(file_path: str, printer_name: str, dpi: int = PDF_RENDER_DPI,
-                      color_mode: Optional[str] = None, page_size: Optional[str] = None,
-                      page_range: Optional[str] = None, scale_mode: str = 'actual', doc_name: Optional[str] = None) -> Tuple[bool, str]:
-    """Render a PDF to images and print with GDI. Respects page_range."""
-    # Determine printer/device DPI for accurate scaling
+def print_pdf_via_gdi(file_path: str, printer_name: str, dpi: int = 150,
+                     color_mode: Optional[str] = None, page_size: Optional[str] = None,
+                     page_range: Optional[str] = None, scale_mode: str = 'actual', doc_name: Optional[str] = None) -> Tuple[bool, str]:
     try:
-        hdc = _create_printer_dc_with_color(printer_name, color_mode=color_mode, page_size=page_size)
-        LOGPIXELSX = 88; LOGPIXELSY = 90
-        dev_dpi_x = hdc.GetDeviceCaps(LOGPIXELSX)
-        dev_dpi_y = hdc.GetDeviceCaps(LOGPIXELSY)
-        hdc.DeleteDC()
-        render_dpi = (dev_dpi_x, dev_dpi_y)
-    except Exception:
-        render_dpi = (dpi or PDF_RENDER_DPI, dpi or PDF_RENDER_DPI)
-
-    ok, result = render_pdf_to_images(
-        file_path,
-        dpi=max(render_dpi),
-        dpi_x=render_dpi[0],
-        dpi_y=render_dpi[1],
-        grayscale=(color_mode == 'bw'),
-        page_range=page_range
-    )
-    if not ok:
-        return False, f"Failed to render PDF: {result}"
-
-    return print_images_via_gdi(
-        result,
-        printer_name,
-        render_dpi=render_dpi,
-        scale_mode=scale_mode,  # Use the provided scale_mode parameter
-        color_mode=color_mode,
-        page_size=page_size,
-        doc_name=doc_name
-    )
+        # Open PDF document via PyMuPDF
+        doc = fitz.open(file_path)
+        
+        # Create Printer Device Context (DC)
+        hDC = win32ui.CreateDC()
+        hDC.CreatePrinterDC(printer_name)
+        hDC.StartDoc(doc_name or "Print Job")
+        
+        # Get printable dimensions of the printer in pixels
+        horz_res = hDC.GetDeviceCaps(win32con.HORZRES)
+        vert_res = hDC.GetDeviceCaps(win32con.VERTICALRES)
+        
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            hDC.StartPage()
+            
+            # Render PDF page to an image pixmap
+            zoom = dpi / 72.0
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            
+            # Check for landscape vs portrait orientation mismatch
+            rect = page.rect
+            is_landscape = rect.width > rect.height
+            printer_is_landscape = horz_res > vert_res
+            
+            # Auto-rotate if page is landscape but printer area is portrait
+            if is_landscape and not printer_is_landscape:
+                img = img.rotate(90, expand=True)
+            elif not is_landscape and printer_is_landscape:
+                img = img.rotate(270, expand=True)
+                
+            img_w, img_h = img.size
+            
+            # Apply scaling mode ('fit' vs 'actual')
+            if scale_mode == 'fit':
+                scale_x = horz_res / img_w
+                scale_y = vert_res / img_h
+                scale = min(scale_x, scale_y)
+                new_w = int(img_w * scale)
+                new_h = int(img_h * scale)
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                img_w, img_h = new_w, new_h
+            
+            # Center the image on the page
+            x_offset = max(0, (horz_res - img_w) // 2)
+            y_offset = max(0, (vert_res - img_h) // 2)
+            
+            # Send image data to Windows GDI printer DC
+            dib = ImageWin.Dib(img)
+            dib.draw(hDC.GetHandleOutput(), (x_offset, y_offset, x_offset + img_w, y_offset + img_h))
+            
+            hDC.EndPage()
+            
+        hDC.EndDoc()
+        hDC.DeleteDC()
+        doc.close()
+        return True, "Printed successfully via GDI"
+        
+    except Exception as e:
+        return False, str(e)
 
 
 # -------------------- High-level job printing --------------------
