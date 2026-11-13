@@ -950,7 +950,7 @@ def reset_idle_timer(self):
         # Set new timer for 5 minutes (300,000 ms)
         self._idle_timer = self.after(300000, self._on_idle_timeout)
 
-    def _on_idle_timeout(self):
+def _on_idle_timeout(self):
         # Go back to home screen automatically
         home_screen = self.controller.frames["HomeScreen"]
         home_screen.show_main_view()
