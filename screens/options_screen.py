@@ -212,7 +212,7 @@ class OptionsScreen(tk.Frame):
         # Returns True if payment is complete for the current job
         return getattr(self.controller.frames.get("PaymentScreen"), "printing_started", False)
 
-    def start_printing(self):
+  def start_printing(self):
         color_option = self.color_var.get()
         black_price, color_price = self.fetch_latest_prices()
         if black_price is None or color_price is None:
@@ -221,7 +221,18 @@ class OptionsScreen(tk.Frame):
 
         price_per_page = black_price if color_option == "bw" else color_price
         
-        actual_total = int(self.total_pages_value.cget("text"))
+        # --- NEW SAFETY CHECK BLOCK ---
+        try:
+            pages_text = self.total_pages_value.cget("text")
+            if pages_text == 'None' or not pages_text.isdigit():
+                messagebox.showerror("Conversion Error", "Cannot calculate price. The document failed to convert to PDF.")
+                return
+            actual_total = int(pages_text)
+        except Exception:
+            messagebox.showerror("Error", "Invalid page count.")
+            return
+        # ------------------------------
+
         pages_range = "all"
         if self.pages_var.get() == "range":
             try:
