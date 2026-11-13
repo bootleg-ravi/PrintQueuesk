@@ -214,10 +214,51 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 
             except Exception as e:
                 print(f"Error during file upload: {e}")
-                self.send_response(500)
+                # Send JSON response back to the frontend JavaScript with a redirect
+                self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+                
+                response = {'status': 'success', 'filename': filename, 'redirect': '/success'}
+                self.wfile.write(json.dumps(response).encode('utf-8'))
+                print(f"Successfully uploaded {filename}")
+
+    def do_GET(self):
+        """Handle GET requests, serving the portal or the success validation page."""
+        if self.path in ('/success', '/success.html'):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            success_html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Upload Successful</title>
+                <style>
+                    body { font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #f0f2f5; }
+                    .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+                    h2 { color: #2e7d32; margin-top: 0; }
+                    p { color: #555; font-size: 16px; line-height: 1.5; }
+                    .btn { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }
+                    .btn:hover { background: #0056b3; }
+                </style>
+            </head>
+            <body>
+                <div class="box">
+                    <h2>✅ Upload Successful!</h2>
+                    <p>Your file has been received and loaded onto the kiosk preview screen.</p>
+                    <p><b>Please look at the kiosk monitor</b> to configure your print settings.</p>
+                    <a href="/" class="btn">Upload Another File</a>
+                </div>
+            </body>
+            </html>
+            """
+            self.wfile.write(success_html.encode('utf-8'))
+        else:
+            # Fall back to default file serving for CSS, JS, and the root upload page
+            super().do_GET()
 
     def send_error(self, code, message=None, explain=None):
         """Override the default 404 error page to redirect back to the upload screen."""
