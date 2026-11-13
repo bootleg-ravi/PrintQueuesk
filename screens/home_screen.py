@@ -283,113 +283,12 @@ class HomeScreen(tk.Frame):
             pass
 
     def fetch_paper_counts(self):
-        """Safely set default paper counts for offline mode without triggering Firebase errors."""
+        """Safely provide default paper counts for offline mode without network calls."""
         try:
-            # Use safe local defaults to ensure 100% offline stability
             self.update_paper_count(100, 100)
         except Exception as e:
-            print(f"[Offline Mode] Using default paper counts: {e}")
+            print(f"[Offline Mode] Paper count fallback: {e}")
             self.update_paper_count(100, 100)
-
-        # Right Card: Logo, Status and Button (rounded, compact size)
-        brand_red = "#b42e41"
-        
-        # Container to center the card vertically
-        right_container = tk.Frame(cards, bg="#e6e6e6")
-        right_container.grid(row=0, column=1, sticky="nsew", padx=(int(15 * scale), int(15 * scale)))
-        
-        # Center frame
-        right_center = tk.Frame(right_container, bg="#e6e6e6")
-        right_center.pack(expand=True, fill="both", pady=(int(8 * scale), 0))
-        
-        right_frame, right = self._rounded_container(
-            right_center, bg="white", radius=15, padding=int(10 * scale), fill_x=True, vcenter=False
-        )
-        right_frame.pack(fill="x", expand=False, padx=int(10 * scale), anchor="n")
-        right_frame.config(height=int(430 * scale))
-        right_frame.pack_propagate(False)  # Prevent the frame from shrinking to fit its contents
-
-        # Logo at the top of right card
-        logo_holder = tk.Frame(right, bg="white")
-        logo_holder.pack(pady=(int(20 * scale), int(10 * scale)))
-        self._load_logo(logo_holder, scale, max_w=int(380 * scale))
-
-        # Content box for status and button - no expandable spacers
-        price_content = tk.Frame(right, bg="white")
-        price_content.pack(pady=(int(15 * scale), 0))
-
-        # Status message
-        self.status_label = tk.Label(
-            price_content,
-            text="Waiting For Files...",
-            font=status_font,
-            bg="white",
-            fg="#333"
-        )
-        self.status_label.pack(anchor="center", pady=(int(30 * scale), int(45 * scale)))
-
-        # Button container for buttons stacked vertically
-        button_container = tk.Frame(price_content, bg="white")
-        button_container.pack(anchor="center", pady=(int(10 * scale), int(5 * scale)))
-        
-        # Button dimensions
-        button_width = int(380 * scale)
-        button_height = int(60 * scale)
-        button_radius = 8
-        
-        # Hotspot button (top)
-        hotspot_frame = tk.Frame(button_container, bg="white", width=button_width, height=button_height)
-        hotspot_frame.pack(pady=(0, int(15 * scale)))
-        hotspot_frame.pack_propagate(False)
-        
-        hotspot_canvas = tk.Canvas(hotspot_frame, width=button_width, height=button_height, 
-                                   bg="white", highlightthickness=0)
-        hotspot_canvas.place(relx=0, rely=0)
-        
-        self._draw_round_rect(hotspot_canvas, 0, 0, button_width, button_height, 
-                             button_radius, fill=brand_red, outline='')
-        
-        hotspot_button = tk.Button(
-            hotspot_canvas,
-            text="Receive File via Hotspot",
-            font=button_font,
-            bg=brand_red, 
-            fg="white",
-            activebackground="#d12246", 
-            activeforeground="white",
-            relief=tk.FLAT, 
-            bd=0,
-            command=self.launch_hotspot_screen,
-            cursor="hand2"
-        )
-        hotspot_button.place(relx=0.5, rely=0.5, anchor="center")
-        
-        # USB button (bottom) - same color as hotspot
-        usb_frame = tk.Frame(button_container, bg="white", width=button_width, height=button_height)
-        usb_frame.pack()
-        usb_frame.pack_propagate(False)
-        
-        usb_canvas = tk.Canvas(usb_frame, width=button_width, height=button_height,
-                              bg="white", highlightthickness=0)
-        usb_canvas.place(relx=0, rely=0)
-        
-        self._draw_round_rect(usb_canvas, 0, 0, button_width, button_height,
-                             button_radius, fill=brand_red, outline='')
-        
-        usb_button = tk.Button(
-            usb_canvas,
-            text="Transfer via USB Drive",
-            font=button_font,
-            bg=brand_red,
-            fg="white",
-            activebackground="#d12246",
-            activeforeground="white",
-            relief=tk.FLAT,
-            bd=0,
-            command=self.show_usb_drive_screen,
-            cursor="hand2"
-        )
-        usb_button.place(relx=0.5, rely=0.5, anchor="center")
 
     def _add_back_icon_button(self, parent):
         """Create a top-left circular back arrow button with no rectangular background."""
