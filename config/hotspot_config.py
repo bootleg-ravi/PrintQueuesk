@@ -246,7 +246,7 @@ class HotspotServer:
     def _run_server(self):
         """Internal method to run the HTTP server."""
         try:
-            with socketserver.TCPServer(("192.168.137.1", self.port), SimpleHTTPRequestHandler) as httpd:
+            with socketserver.TCPServer(("0.0.0.0", self.port), SimpleHTTPRequestHandler) as httpd:
                 self.server = httpd
                 print(f"HTTP Server successfully bound to port {self.port}")
                 httpd.serve_forever()
