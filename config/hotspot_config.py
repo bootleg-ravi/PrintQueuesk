@@ -152,111 +152,108 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(b"404 Not Found")
 
     def do_POST(self):
-        """Handle POST requests for file uploads."""
-        if self.path == '/upload':
-            content_type = self.headers.get('Content-Type', '')
-            if 'multipart/form-data' not in content_type:
-                self.send_response(400)
-                self.end_headers()
-                return
-            
-            try:
-                boundary = content_type.split('boundary=')[1].encode()
-                remainbytes = int(self.headers['Content-Length'])
-                line = self.rfile.readline()
-                remainbytes -= len(line)
-                
-                if boundary not in line:
+            """Handle POST requests for file uploads with binary safety for PDFs and DOCXs."""
+            if self.path == '/upload':
+                content_type = self.headers.get('Content-Type', '')
+                if 'multipart/form-data' not in content_type:
                     self.send_response(400)
                     self.end_headers()
                     return
                 
-                line = self.rfile.readline()
-                remainbytes -= len(line)
-                
-                filename = None
-                for part in line.decode().split(';'):
-                    if 'filename=' in part:
-                        filename = part.split('filename=')[1].strip().strip('"')
-                        break
-                
-                if not filename:
-                    self.send_response(400)
-                    self.end_headers()
-                    return
-                
-                line = self.rfile.readline()
-                remainbytes -= len(line)
-                line = self.rfile.readline()
-                remainbytes -= len(line)
-                
-                filepath = os.path.join(self.upload_dir, filename)
-                base, ext = os.path.splitext(filepath)
-                counter = 1
-                while os.path.exists(filepath):
-                    filepath = f"{base}_{counter}{ext}"
-                    counter += 1
-                
-                with open(filepath, 'wb') as f:
-                    preline = self.rfile.readline()
-                    remainbytes -= len(preline)
+                try:
+                    content_length = int(self.headers.get('Content-Length', 0))
+                    body = self.rfile.read(content_length)
                     
-                    while remainbytes > 0:
-                        line = self.rfile.readline()
-                        remainbytes -= len(line)
-                        
-                        if boundary in line:
-                            preline = preline[0:-1]
-                            if preline.endswith(b'\r'):
-                                preline = preline[0:-1]
-                            f.write(preline)
-                            break
-                        else:
-                            f.write(preline)
-                            preline = line
-                
+                    boundary = content_type.split('boundary=')[1].encode()
+                    parts = body.split(b'--' + boundary)
+                    
+                    filename = None
+                    file_content = None
+                    
+                    for part in parts:
+                        if b'filename=' in part:
+                            header_end = part.find(b'\r\n\r\n')
+                            header_offset = 4
+                            if header_end == -1:
+                                header_end = part.find(b'\n\n')
+                                header_offset = 2
+                                
+                            if header_end != -1:
+                                headers_text = part[:header_end].decode('utf-8', errors='ignore')
+                                for line in headers_text.splitlines():
+                                    if 'filename=' in line:
+                                        for p in line.split(';'):
+                                            if 'filename=' in p:
+                                                filename = p.split('filename=')[1].strip().strip('"')
+                                                break
+                                
+                                content = part[header_end + header_offset:]
+                                if content.endswith(b'\r\n'):
+                                    content = content[:-2]
+                                elif content.endswith(b'\n'):
+                                    content = content[:-1]
+                                if content.endswith(b'--'):
+                                    content = content[:-2]
+                                if content.endswith(b'\r\n'):
+                                    content = content[:-2]
+                                elif content.endswith(b'\n'):
+                                    content = content[:-1]
+                                    
+                                file_content = content
+                                break
+                    
+                    if not filename or not file_content:
+                        self.send_response(400)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({'status': 'error', 'message': 'No file uploaded'}).encode('utf-8'))
+                        return
+                    
                     # --- OFFLINE JOB CREATION & PATH FIX ---
-                import time
-                import json
-                job_id = f"LOCAL-{int(time.time())}"
-                
-                # Format filename with job_id prefix to match kiosk expectations
-                saved_filename = f"{job_id}_{filename}"
-                filepath = os.path.join(self.upload_dir, saved_filename)
-                
-                job_data = {
-                    'job_id': job_id,
-                    'file_name': filename,
-                    'file_path': filepath,
-                    'path': filepath,
-                    'download_url': '',
-                    'status': 'pending',
-                    'details': [{
-                        'num_copies': 1,
-                        'page_range': 'all',
-                        'color_mode': 'colored',
-                        'page_size': 'Letter',
-                        'scale_mode': 'fit'
-                    }]
-                }
-                
-                if self.callback:
-                    self.callback(filepath, job_data)
-                
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                
-                response = {'status': 'success', 'filename': filename, 'redirect': '/success'}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-                print(f"Successfully uploaded {filename}")
-                
-            except Exception as e:
-                print(f"Error during file upload: {e}")
-                self.send_response(500)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+                    import time
+                    import json
+                    job_id = f"LOCAL-{int(time.time())}"
+                    
+                    saved_filename = f"{job_id}_{filename}"
+                    filepath = os.path.join(self.upload_dir, saved_filename)
+                    
+                    # Write raw binary bytes safely without corruption
+                    with open(filepath, 'wb') as f:
+                        f.write(file_content)
+                    
+                    job_data = {
+                        'job_id': job_id,
+                        'file_name': filename,
+                        'file_path': filepath,
+                        'path': filepath,
+                        'download_url': '',
+                        'status': 'pending',
+                        'details': [{
+                            'num_copies': 1,
+                            'page_range': 'all',
+                            'color_mode': 'colored',
+                            'page_size': 'Letter',
+                            'scale_mode': 'fit'
+                        }]
+                    }
+                    
+                    if self.callback:
+                        self.callback(filepath, job_data)
+                    
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    
+                    response = {'status': 'success', 'filename': filename, 'redirect': '/success'}
+                    self.wfile.write(json.dumps(response).encode('utf-8'))
+                    print(f"Successfully uploaded and saved {filename}")
+                    
+                except Exception as e:
+                    print(f"Error during binary file upload: {e}")
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
 
     def send_error(self, code, message=None, explain=None):
         if code == 404:
