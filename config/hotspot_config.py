@@ -215,10 +215,15 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f.write(preline)
                             preline = line
                 
-                # --- OFFLINE JOB CREATION ---
+                    # --- OFFLINE JOB CREATION & PATH FIX ---
                 import time
                 import json
                 job_id = f"LOCAL-{int(time.time())}"
+                
+                # Format filename with job_id prefix to match kiosk expectations
+                saved_filename = f"{job_id}_{filename}"
+                filepath = os.path.join(self.upload_dir, saved_filename)
+                
                 job_data = {
                     'job_id': job_id,
                     'file_name': filename,
