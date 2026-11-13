@@ -307,3 +307,30 @@ class HotspotConfig:
             print(f"QR code saved to: {output_path}")
         
         return img
+
+def save_file_to_firebase(file_path, file_name):
+    """Compatibility wrapper for offline mode: creates local job data without Firebase."""
+    total_pages = get_total_pages(file_path)
+    file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+    job_id = f"LOCAL-{int(time.time())}"
+    
+    job_data = {
+        'job_id': job_id,
+        'file_name': file_name,
+        'file_size': file_size,
+        'total_pages': total_pages,
+        'status': 'pending',
+        'local_path': file_path,
+        'file_path': file_path,
+        'upload_source': 'usb',
+        'details': [{
+            'file_name': file_name,
+            'page_range': 'all',
+            'color_mode': 'colored',
+            'num_copies': 1,
+            'page_size': 'Letter',
+            'scale_mode': 'fit'
+        }]
+    }
+    print(f"[Offline Mode] Local job data created for USB/File: {file_name}")
+    return job_data
