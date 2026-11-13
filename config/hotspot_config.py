@@ -261,7 +261,7 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 filepath = f"{base}_{counter}{ext}"
                 counter += 1
             
-            try:
+try:
                 with open(filepath, 'wb') as f:
                     preline = self.rfile.readline()
                     remainbytes -= len(preline)
@@ -280,42 +280,41 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f.write(preline)
                             preline = line
                 
-# Generate local job data (bypassing Firebase completely)
-            import time
-            job_id = f"LOCAL-{int(time.time())}"
-            job_data = {
-                'job_id': job_id,
-                'file_name': filename,
-                'file_path': filepath,
-                'path': filepath,
-                'download_url': '',
-                'status': 'pending',
-                'details': [{
-                    'num_copies': 1,
-                    'page_range': 'all',
-                    'color_mode': 'colored',
-                    'page_size': 'Letter',
-                    'scale_mode': 'fit'
-                }]
-            }
-            
-            # Call callback to trigger the OptionsScreen instantly
-            if self.callback:
-                self.callback(filepath, job_data)
+                # --- NEW OFFLINE OVERRIDE ---
+                job_id = f"LOCAL-{int(time.time())}"
+                job_data = {
+                    'job_id': job_id,
+                    'file_name': filename,
+                    'file_path': filepath,
+                    'path': filepath,
+                    'download_url': '',
+                    'status': 'pending',
+                    'details': [{
+                        'num_copies': 1,
+                        'page_range': 'all',
+                        'color_mode': 'colored',
+                        'page_size': 'Letter',
+                        'scale_mode': 'fit'
+                    }]
+                }
+                
+                # Call callback to trigger the OptionsScreen instantly
+                if self.callback:
+                    self.callback(filepath, job_data)
                 
                 # Send a JSON response indicating success
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
+                import json
                 response = {'status': 'success', 'filename': filename}
                 self.wfile.write(json.dumps(response).encode())
                 print(f"Successfully uploaded {filename}")
                 
-            except Exception as e:
+except Exception as e:
                 print(f"Error during file upload: {e}")
                 self.send_response(500)
                 self.end_headers()
-
 
 class HotspotServer:
     """Manages the HTTP server for hotspot file transfers."""
