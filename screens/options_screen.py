@@ -943,15 +943,15 @@ def load_preview(self, page_num=1, on_done=None):
                 except OSError as e:
                     print(f"Error removing temp directory {temp_dir}: {e}")
 
-def reset_idle_timer(self):
+        def reset_idle_timer(self):
         # Cancel previous timer if exists
-        if hasattr(self, '_idle_timer') and self._idle_timer:
-            self.after_cancel(self._idle_timer)
+            if hasattr(self, '_idle_timer') and self._idle_timer:
+                self.after_cancel(self._idle_timer)
         # Set new timer for 5 minutes (300,000 ms)
         self._idle_timer = self.after(300000, self._on_idle_timeout)
 
-def _on_idle_timeout(self):
+        def _on_idle_timeout(self):
         # Go back to home screen automatically
-        home_screen = self.controller.frames["HomeScreen"]
-        home_screen.show_main_view()
-        self.controller.show_frame("HomeScreen")
+            home_screen = self.controller.frames["HomeScreen"]
+            home_screen.show_main_view()
+            self.controller.show_frame("HomeScreen")
