@@ -118,49 +118,49 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """Handle POST requests for file uploads."""
         if self.path == '/upload':
-            content_type = self.headers['Content-Type']
+            content_type = self.headers.get('Content-Type', '')
             if 'multipart/form-data' not in content_type:
                 self.send_response(400)
                 self.end_headers()
                 return
             
-            boundary = content_type.split('boundary=')[1].encode()
-            remainbytes = int(self.headers['Content-Length'])
-            line = self.rfile.readline()
-            remainbytes -= len(line)
-            
-            if boundary not in line:
-                self.send_response(400)
-                self.end_headers()
-                return
-            
-            line = self.rfile.readline()
-            remainbytes -= len(line)
-            
-            filename = None
-            for part in line.decode().split(';'):
-                if 'filename=' in part:
-                    filename = part.split('filename=')[1].strip().strip('"')
-                    break
-            
-            if not filename:
-                self.send_response(400)
-                self.end_headers()
-                return
-            
-            line = self.rfile.readline()
-            remainbytes -= len(line)
-            line = self.rfile.readline()
-            remainbytes -= len(line)
-            
-            filepath = os.path.join(self.upload_dir, filename)
-            base, ext = os.path.splitext(filepath)
-            counter = 1
-            while os.path.exists(filepath):
-                filepath = f"{base}_{counter}{ext}"
-                counter += 1
-            
             try:
+                boundary = content_type.split('boundary=')[1].encode()
+                remainbytes = int(self.headers['Content-Length'])
+                line = self.rfile.readline()
+                remainbytes -= len(line)
+                
+                if boundary not in line:
+                    self.send_response(400)
+                    self.end_headers()
+                    return
+                
+                line = self.rfile.readline()
+                remainbytes -= len(line)
+                
+                filename = None
+                for part in line.decode().split(';'):
+                    if 'filename=' in part:
+                        filename = part.split('filename=')[1].strip().strip('"')
+                        break
+                
+                if not filename:
+                    self.send_response(400)
+                    self.end_headers()
+                    return
+                
+                line = self.rfile.readline()
+                remainbytes -= len(line)
+                line = self.rfile.readline()
+                remainbytes -= len(line)
+                
+                filepath = os.path.join(self.upload_dir, filename)
+                base, ext = os.path.splitext(filepath)
+                counter = 1
+                while os.path.exists(filepath):
+                    filepath = f"{base}_{counter}{ext}"
+                    counter += 1
+                
                 with open(filepath, 'wb') as f:
                     preline = self.rfile.readline()
                     remainbytes -= len(preline)
@@ -179,7 +179,7 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f.write(preline)
                             preline = line
                 
-                # --- NEW OFFLINE JOB CREATION ---
+                # --- OFFLINE JOB CREATION ---
                 import time
                 import json
                 job_id = f"LOCAL-{int(time.time())}"
@@ -199,11 +199,11 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     }]
                 }
                 
-                # Call callback to trigger the OptionsScreen instantly
+                # Trigger kiosk OptionsScreen
                 if self.callback:
                     self.callback(filepath, job_data)
                 
-                # --- Send JSON response back to the frontend JavaScript ---
+                # Send JSON success response back to frontend JS
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
@@ -215,11 +215,18 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 print(f"Error during file upload: {e}")
                 self.send_response(500)
+                self.send_header('Content-type', 'application/json')
                 self.end_headers()
-                self.wfile.write(b'{"status": "error"}')
-        
-        self.wfile.write(success_html.encode('utf-8'))
-        print(f"Successfully uploaded {filename}")
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+    def send_error(self, code, message=None, explain=None):
+        """Override the default 404 error page to redirect back to the upload screen."""
+        if code == 404:
+            self.send_response(302)
+            self.send_header('Location', '/')
+            self.end_headers()
+        else:
+            super().send_error(code, message, explain)    
 class HotspotServer:
     """Manages the HTTP server for hotspot file transfers."""
     
