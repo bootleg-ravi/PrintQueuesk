@@ -160,81 +160,85 @@ class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 filepath = f"{base}_{counter}{ext}"
                 counter += 1
             
-            try:
-                with open(filepath, 'wb') as f:
-                    preline = self.rfile.readline()
-                    remainbytes -= len(preline)
-                    
-                    while remainbytes > 0:
-                        line = self.rfile.readline()
-                        remainbytes -= len(line)
+                try:
+                    with open(filepath, 'wb') as f:
+                        preline = self.rfile.readline()
+                        remainbytes -= len(preline)
                         
-                        if boundary in line:
-                            preline = preline[0:-1]
-                            if preline.endswith(b'\r'):
+                        while remainbytes > 0:
+                            line = self.rfile.readline()
+                            remainbytes -= len(line)
+                            
+                            if boundary in line:
                                 preline = preline[0:-1]
-                            f.write(preline)
-                            break
-                        else:
-                            f.write(preline)
-                            preline = line
-                
-                # --- NEW OFFLINE JOB CREATION ---
-                job_id = f"LOCAL-{int(time.time())}"
-                job_data = {
-                    'job_id': job_id,
-                    'file_name': filename,
-                    'file_path': filepath,
-                    'path': filepath,
-                    'download_url': '',
-                    'status': 'pending',
-                    'details': [{
-                        'num_copies': 1,
-                        'page_range': 'all',
-                        'color_mode': 'colored',
-                        'page_size': 'Letter',
-                        'scale_mode': 'fit'
-                    }]
-                }
-                
-                # Call callback to trigger the OptionsScreen instantly
-                if self.callback:
-                    self.callback(filepath, job_data)
-                
-                # Send a JSON response indicating success
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                response = {'status': 'success', 'filename': filename}
-                self.wfile.write(json.dumps(response).encode())
-                print(f"Successfully uploaded {filename}")
-                
-            except Exception as e:
-                print(f"Error during file upload: {e}")
-                self.send_response(500)
-                self.end_headers()
-                success_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Upload Success</title>
-            <style>
-                body {{ font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #f0f2f5; }}
-                .box {{ background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }}
-                h2 {{ color: #2e7d32; margin-top: 0; }}
-                p {{ color: #555; font-size: 16px; line-height: 1.5; }}
-            </style>
-        </head>
-        <body>
-            <div class="box">
-                <h2>✅ Upload Successful!</h2>
-                <p>Your file <b>{filename}</b> has been received.</p>
-                <p><b>Please look at the kiosk screen</b> to select your printing options.</p>
-            </div>
-        </body>
-        </html>
-        """
+                                if preline.endswith(b'\r'):
+                                    preline = preline[0:-1]
+                                f.write(preline)
+                                break
+                            else:
+                                f.write(preline)
+                                preline = line
+                    
+                    # --- NEW OFFLINE JOB CREATION ---
+                    job_id = f"LOCAL-{int(time.time())}"
+                    job_data = {
+                        'job_id': job_id,
+                        'file_name': filename,
+                        'file_path': filepath,
+                        'path': filepath,
+                        'download_url': '',
+                        'status': 'pending',
+                        'details': [{
+                            'num_copies': 1,
+                            'page_range': 'all',
+                            'color_mode': 'colored',
+                            'page_size': 'Letter',
+                            'scale_mode': 'fit'
+                        }]
+                    }
+                    
+                    # Call callback to trigger the OptionsScreen instantly
+                    if self.callback:
+                        self.callback(filepath, job_data)
+                    
+                    # --- Send an instant HTML success page back to the mobile phone ---
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    
+                    success_html = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <title>Upload Success</title>
+                        <style>
+                            body {{ font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #f0f2f5; }}
+                            .box {{ background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }}
+                            h2 {{ color: #2e7d32; margin-top: 0; }}
+                            p {{ color: #555; font-size: 16px; line-height: 1.5; }}
+                            .btn {{ display: inline-block; margin-top: 20px; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="box">
+                            <h2>✅ Upload Successful!</h2>
+                            <p>Your file <b>{filename}</b> has been received.</p>
+                            <p><b>Please look at the kiosk screen</b> to select your printing options.</p>
+                            <a href="/" class="btn">Upload Another File</a>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    self.wfile.write(success_html.encode('utf-8'))
+                    print(f"Successfully uploaded {filename}")
+                    
+                except Exception as e:
+                    print(f"Error during file upload: {e}")
+                    self.send_response(500)
+                    self.end_headers()
+                    self.wfile.write(b"Internal Server Error")
+        
         self.wfile.write(success_html.encode('utf-8'))
         print(f"Successfully uploaded {filename}")
 class HotspotServer:
