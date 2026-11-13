@@ -496,14 +496,34 @@ def print_pdf_via_gdi(file_path: str, printer_name: str, dpi: int = 150,
 
 # -------------------- High-level job printing --------------------
 
-def _update_job_status(job_id: str, status: str) -> None:
+def convert_docx_to_pdf(docx_path: str, output_pdf_path: str) -> Tuple[bool, str]:
+    """Convert DOCX to PDF using LibreOffice Headless (no Word required)."""
     try:
-        job_ref = db.reference(f'jobs/print_jobs/{job_id}')
-        job_ref.update({'status': status, 'updated_at': time.time()})
-        detail_ref = db.reference(f'jobs/print_jobs/{job_id}/details/0')
-        detail_ref.update({'status': status, 'updated_at': time.time()})
+        output_dir = os.path.dirname(output_pdf_path)
+        
+        # Run LibreOffice in headless mode
+        result = subprocess.run(
+            ['soffice', '--headless', '--convert-to', 'pdf', '--outdir', output_dir, docx_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=45
+        )
+        
+        if result.returncode != 0:
+            raise RuntimeError(f"LibreOffice error: {result.stderr}")
+            
+        base_name = os.path.splitext(os.path.basename(docx_path))[0]
+        generated_pdf = os.path.join(output_dir, f"{base_name}.pdf")
+        
+        if generated_pdf != output_pdf_path and os.path.exists(generated_pdf):
+            if os.path.exists(output_pdf_path):
+                os.remove(output_pdf_path)
+            os.rename(generated_pdf, output_pdf_path)
+            
+        return True, "Converted successfully"
     except Exception as e:
-        print(f"[ERROR] Firebase update failed: {e}")
+        return False, str(e)
 
 
 def _wait_for_spool_completion(printer_name: str, doc_name: str, poll_interval: float = 1.0, timeout: float = 600.0) -> bool:
@@ -618,30 +638,24 @@ def print_file_for_job(job_id: str) -> Tuple[bool, str]:
         _update_job_status(job_id, "printing")
 
         # Decide printing path
+# Decide printing path
         is_pdf = file_path.lower().endswith('.pdf')
         if not is_pdf:
-            # Try converting DOCX to PDF when possible
-            try:
-                import pythoncom
-                from docx2pdf import convert
-                
-                # Initialize COM for this thread
-                pythoncom.CoInitialize()
-                try:
-                    pdf_path = file_path + ".pdf"
-                    convert(file_path, pdf_path)
-                    file_path = pdf_path
-                    is_pdf = True
-                    print(f"[INFO] Converted to PDF: {pdf_path}")
-                finally:
-                    # Uninitialize COM
-                    pythoncom.CoUninitialize()
-            except Exception as e:
-                print(f"[WARNING] DOCX to PDF conversion failed: {e}")
+            # Try converting DOCX to PDF using LibreOffice
+            pdf_path = file_path + ".pdf"
+            print(f"[INFO] Attempting LibreOffice conversion for: {file_path}")
+            
+            ok, msg = convert_docx_to_pdf(file_path, pdf_path)
+            if ok:
+                file_path = pdf_path
+                is_pdf = True
+                print(f"[INFO] Converted to PDF via LibreOffice: {pdf_path}")
+            else:
+                print(f"[WARNING] DOCX to PDF conversion failed: {msg}")
                 if color_mode == 'bw':
                     # We cannot enforce B/W reliably via shell printing
                     _update_job_status(job_id, "failed")
-                    return False, f"Conversion to PDF failed; cannot enforce B/W via fallback. {e}"
+                    return False, f"Conversion to PDF failed; cannot enforce B/W via fallback. {msg}"
                 # Otherwise proceed with shell/command printing below
 
         base_doc_name = f"JOB-{job_id}-{os.path.basename(file_path)}"
